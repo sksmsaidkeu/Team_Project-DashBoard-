@@ -1,7 +1,7 @@
 import { supabase } from './supabaseClient.js';
 import { getSession, loginWithPassword, logout } from './auth.js';
 import { initSignup } from './signup.js';
-import { renderCompanyHighlight } from './tab-company.js';
+import { renderCompanyHighlight, initCompanySubtabs } from './tab-company.js';
 import { renderJobseekerHighlight } from './tab-jobseeker.js';
 
 const tabButtons = document.querySelectorAll('.tab');
@@ -26,6 +26,7 @@ function setActiveTab(tabName) {
 
   if (tabName === 'company') {
     renderCompanyHighlight(document.getElementById('company-highlight'));
+    initCompanySubtabs();
   }
   if (tabName === 'jobseeker') {
     renderJobseekerHighlight(document.getElementById('jobseeker-highlight'));
@@ -76,7 +77,10 @@ function renderAuthBar(session) {
 
 function refreshActiveTabContent() {
   const activeTab = document.querySelector('.tab[aria-selected="true"]')?.dataset.tab;
-  if (activeTab === 'company') renderCompanyHighlight(document.getElementById('company-highlight'));
+  if (activeTab === 'company') {
+    renderCompanyHighlight(document.getElementById('company-highlight'));
+    initCompanySubtabs();
+  }
   if (activeTab === 'jobseeker') renderJobseekerHighlight(document.getElementById('jobseeker-highlight'));
 }
 

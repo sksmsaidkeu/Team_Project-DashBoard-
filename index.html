@@ -198,6 +198,16 @@
     <section id="panel-company" class="tab-panel" role="tabpanel" aria-labelledby="tab-btn-company" hidden>
       <h2 class="text-h2">인재 검색 · 공고 관리 · 지원자 관리</h2>
       <div id="company-highlight"></div>
+
+      <nav class="subtabs" id="company-subtabs" role="tablist" aria-label="기업 화면 서브 탭">
+        <button type="button" class="subtab" role="tab" id="subtab-btn-jobs" aria-selected="true" aria-controls="company-sub-jobs" data-subtab="jobs">공고 관리</button>
+        <button type="button" class="subtab" role="tab" id="subtab-btn-talents" aria-selected="false" aria-controls="company-sub-talents" data-subtab="talents">인재 검색</button>
+        <button type="button" class="subtab" role="tab" id="subtab-btn-applicants" aria-selected="false" aria-controls="company-sub-applicants" data-subtab="applicants">지원자 관리</button>
+      </nav>
+
+      <section id="company-sub-jobs" class="subtab-panel" role="tabpanel" aria-labelledby="subtab-btn-jobs"></section>
+      <section id="company-sub-talents" class="subtab-panel" role="tabpanel" aria-labelledby="subtab-btn-talents" hidden></section>
+      <section id="company-sub-applicants" class="subtab-panel" role="tabpanel" aria-labelledby="subtab-btn-applicants" hidden></section>
     </section>
 
     <!-- Tab2(구직자) -->

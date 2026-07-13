@@ -10,3 +10,9 @@
 # OpenAPI spec files
 openapi (1).json
 openapi.json
+
+# Python backend
+__pycache__/
+*.pyc
+.venv/
+venv/

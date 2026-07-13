@@ -69,10 +69,27 @@ export async function fetchCategoriesByIds(ids) {
 }
 
 /**
+ * 카테고리 leaf id로부터 최상위 조상까지의 경로를 [최상위, ..., leaf] 순서로 반환한다.
+ * mountCascadeSelects의 initialValue(수정 모달 등에서 기존 선택값 복원)에 사용한다.
+ */
+async function buildAncestorChain(id) {
+  const chain = [];
+  let current = await fetchCategoryById(id);
+  while (current) {
+    chain.unshift(current.id);
+    if (!current.parent_id) break;
+    current = await fetchCategoryById(current.parent_id);
+  }
+  return chain;
+}
+
+/**
  * 계층형 카테고리(업종/직무/지역)를 대분류→중분류→소분류 순서로 선택하는 select 그룹을 렌더링한다.
  * 자식 카테고리가 더 없으면 그 단계를 최종(leaf) 선택값으로 취급한다.
+ *
+ * @param {string} [initialValue] 기존 선택값(카테고리 id). 수정 모달 등에서 기존 값을 복원할 때 사용한다.
  */
-export function mountCascadeSelects({ container, categoryType, maxDepth, placeholderLabels, onChange }) {
+export function mountCascadeSelects({ container, categoryType, maxDepth, placeholderLabels, onChange, initialValue }) {
   container.innerHTML = '';
   let selects = [];
   let currentValue = null;
@@ -87,6 +104,29 @@ export function mountCascadeSelects({ container, categoryType, maxDepth, placeho
       selects[i].remove();
     }
     selects = selects.slice(0, index);
+  }
+
+  async function selectAt(depthIndex, value) {
+    clearFrom(depthIndex + 1);
+    selects[depthIndex].value = value || '';
+
+    if (!value) {
+      notify(null);
+      return;
+    }
+
+    if (depthIndex + 1 >= maxDepth) {
+      notify(value);
+      return;
+    }
+
+    const children = await fetchChildCategories(value);
+    if (children.length > 0) {
+      notify(null);
+      await addSelect(depthIndex + 1, value);
+    } else {
+      notify(value);
+    }
   }
 
   async function addSelect(depthIndex, parentId) {
@@ -111,34 +151,24 @@ export function mountCascadeSelects({ container, categoryType, maxDepth, placeho
       select.appendChild(option);
     });
 
-    select.addEventListener('change', async () => {
-      clearFrom(depthIndex + 1);
-      const value = select.value || null;
-
-      if (!value) {
-        notify(null);
-        return;
-      }
-
-      if (depthIndex + 1 >= maxDepth) {
-        notify(value);
-        return;
-      }
-
-      const children = await fetchChildCategories(value);
-      if (children.length > 0) {
-        notify(null);
-        await addSelect(depthIndex + 1, value);
-      } else {
-        notify(value);
-      }
+    select.addEventListener('change', () => {
+      selectAt(depthIndex, select.value || null);
     });
 
     selects.push(select);
     container.appendChild(select);
   }
 
-  addSelect(0, null);
+  (async () => {
+    await addSelect(0, null);
+    if (initialValue) {
+      const chain = await buildAncestorChain(initialValue);
+      for (let i = 0; i < chain.length && i < maxDepth; i += 1) {
+        // eslint-disable-next-line no-await-in-loop
+        await selectAt(i, chain[i]);
+      }
+    }
+  })();
 
   return {
     getValue: () => currentValue,
@@ -169,6 +199,66 @@ export async function mountSkillCheckboxes({ container, onChange }) {
     input.id = inputId;
     input.value = row.id;
     input.className = 'sr-only-checkbox';
+
+    input.addEventListener('change', () => {
+      if (input.checked) {
+        selected.add(row.id);
+      } else {
+        selected.delete(row.id);
+      }
+      wrapper.classList.toggle('tag--checked', input.checked);
+      onChange?.(Array.from(selected));
+    });
+
+    wrapper.appendChild(input);
+    wrapper.append(row.title);
+    container.appendChild(wrapper);
+  });
+
+  return {
+    getValue: () => Array.from(selected),
+  };
+}
+
+/**
+ * 특정 부모 카테고리(예: JOB 직군, depth 1)의 자식 카테고리(직무 상세, depth 2)를
+ * 다중 선택 체크박스 그룹으로 렌더링한다. 채용공고의 `position_detail_category_ids`
+ * (DB.md 3.8.1절 job_posting_position_details) 입력에 사용한다.
+ *
+ * @param {string[]} [initialSelectedIds] 기존에 선택되어 있던 하위 카테고리 id 목록(수정 모달용)
+ */
+export async function mountCategoryCheckboxesByParent({ container, parentId, initialSelectedIds = [], onChange }) {
+  container.innerHTML = '';
+
+  if (!parentId) {
+    container.innerHTML = '<p class="empty-state">상위 카테고리를 먼저 선택해주세요.</p>';
+    return { getValue: () => [] };
+  }
+
+  const rows = await fetchChildCategories(parentId);
+  const selected = new Set(initialSelectedIds);
+
+  if (rows.length === 0) {
+    container.innerHTML = '<p class="empty-state">하위 카테고리가 없습니다.</p>';
+    return { getValue: () => [] };
+  }
+
+  rows.forEach((row) => {
+    const inputId = `detail-${row.id}`;
+    const wrapper = document.createElement('label');
+    wrapper.className = 'tag tag--checkbox';
+    wrapper.setAttribute('for', inputId);
+
+    const input = document.createElement('input');
+    input.type = 'checkbox';
+    input.id = inputId;
+    input.value = row.id;
+    input.className = 'sr-only-checkbox';
+
+    if (selected.has(row.id)) {
+      input.checked = true;
+      wrapper.classList.add('tag--checked');
+    }
 
     input.addEventListener('change', () => {
       if (input.checked) {

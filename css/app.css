@@ -98,6 +98,7 @@
   flex-direction: column;
   gap: var(--space-4);
 }
+.signup-form[hidden] { display: none; }
 .form-row { display: flex; flex-direction: column; gap: var(--space-2); }
 .form-row--split {
   flex-direction: row;
@@ -186,4 +187,76 @@
   border-radius: var(--radius-md);
   padding: var(--space-6);
   text-align: center;
+}
+
+/* Tab1(기업) 서브탭 — 공고 관리 / 인재 검색 / 지원자 관리 (index.html #company-subtabs) */
+.subtabs {
+  display: flex;
+  gap: var(--space-2);
+  border-bottom: 1px solid var(--line);
+  margin: var(--space-8) 0 var(--space-6);
+}
+.subtab {
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  padding: var(--space-2) var(--space-4);
+  font: 600 var(--text-label)/1.2 var(--font-sans);
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.subtab[aria-selected="true"] {
+  color: var(--ink);
+  border-bottom-color: var(--pink-primary);
+}
+.subtab:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+.subtab-panel[hidden] { display: none; }
+
+/* 공고 관리 상단 툴바(상태 필터 + 등록 버튼) */
+.table-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+  flex-wrap: wrap;
+}
+
+/* 한 줄짜리 폼 로우(라벨 + 인풋/셀렉트를 가로 배치) — 상태 필터, 공고 선택 셀렉트 등 */
+.form-row--inline {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+.form-label--inline { margin: 0; }
+
+/* 인재 검색 — 좌측 필터 사이드바 + 우측 결과 그리드(DESIGN.md 4.2절 "관리 콘솔" 레이아웃) */
+.company-console {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: var(--space-6);
+  align-items: start;
+}
+.filter-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+}
+@media (max-width: 768px) {
+  .company-console { grid-template-columns: 1fr; }
+}
+
+.talent-card__head {
+  display: flex;
+  gap: var(--space-4);
+  align-items: flex-start;
+  margin-bottom: var(--space-3);
 }

@@ -2,6 +2,9 @@ import { supabase } from './supabaseClient.js';
 import { getCurrentUserProfile } from './auth.js';
 import { fetchCategoriesByIds } from './categories.js';
 import { employmentTypeLabel } from './signup.js';
+import { renderJobsPanel } from './tab-company-jobs.js';
+import { renderTalentsPanel } from './tab-company-talents.js';
+import { renderApplicantsPanel } from './tab-company-applicants.js';
 
 /**
  * Tab1(기업) 콘텐츠 최상단 하이라이트.
@@ -127,4 +130,45 @@ function renderUI(container, candidates, categoryMap) {
       </div>`;
 
   container.innerHTML = bannerHtml + bodyHtml;
+}
+
+// --- 서브탭 오케스트레이션(공고 관리 / 인재 검색 / 지원자 관리) ---
+// 위 renderCompanyHighlight()는 기존 하드필터 하이라이트 위젯(Supabase 직접 조회)을 그대로 유지하고,
+// 아래 서브탭들은 새 FastAPI 백엔드(backend/app, js/api-client.js)를 호출하는 실제 관리 화면이다.
+
+const SUBTAB_PANELS = {
+  jobs: { render: renderJobsPanel, elId: 'company-sub-jobs' },
+  talents: { render: renderTalentsPanel, elId: 'company-sub-talents' },
+  applicants: { render: renderApplicantsPanel, elId: 'company-sub-applicants' },
+};
+
+let companySubtabsBound = false;
+
+export function initCompanySubtabs() {
+  const nav = document.getElementById('company-subtabs');
+  if (!nav) return;
+
+  function activate(name) {
+    nav.querySelectorAll('.subtab').forEach((btn) => {
+      btn.setAttribute('aria-selected', String(btn.dataset.subtab === name));
+    });
+    Object.entries(SUBTAB_PANELS).forEach(([key, { elId }]) => {
+      const el = document.getElementById(elId);
+      if (el) el.hidden = key !== name;
+    });
+    const target = SUBTAB_PANELS[name];
+    if (target) {
+      target.render(document.getElementById(target.elId));
+    }
+  }
+
+  if (!companySubtabsBound) {
+    nav.querySelectorAll('.subtab').forEach((btn) => {
+      btn.addEventListener('click', () => activate(btn.dataset.subtab));
+    });
+    companySubtabsBound = true;
+  }
+
+  const current = nav.querySelector('.subtab[aria-selected="true"]')?.dataset.subtab || 'jobs';
+  activate(current);
 }
