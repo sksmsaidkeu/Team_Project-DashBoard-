@@ -1,0 +1,189 @@
+/* 앱 레이아웃 · 폼 · 탭 등 DESIGN.md 컴포넌트로 정의되지 않은 화면 전용 스타일.
+   색상/spacing/radius는 모두 css/tokens.css의 기존 토큰만 사용한다. */
+
+.site-header {
+  border-bottom: 1px solid var(--line);
+  background: var(--paper);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.site-header__inner {
+  max-width: var(--container-max);
+  margin: 0 auto;
+  padding: var(--space-3) var(--space-6);
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  flex-wrap: wrap;
+}
+.logo {
+  font: 700 var(--text-h5)/1.2 var(--font-sans);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.tabs {
+  display: flex;
+  gap: var(--space-2);
+  flex: 1;
+}
+.tab {
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  padding: var(--space-3) var(--space-4);
+  font: 600 var(--text-label)/1.2 var(--font-sans);
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.tab[aria-selected="true"] {
+  color: var(--ink);
+  border-bottom-color: var(--pink-primary);
+}
+.tab:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.auth-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.auth-user {
+  font: 500 var(--text-body-sm)/1.2 var(--font-sans);
+  color: var(--muted-strong);
+}
+.login-form {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.app-main {
+  max-width: var(--container-max);
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-6) var(--space-24);
+}
+
+.tab-panel[hidden] { display: none; }
+
+.page-title { font: 700 var(--text-h1)/1.2 var(--font-sans); }
+.page-lead { font: 400 var(--text-body-lg)/1.6 var(--font-sans); color: var(--muted-strong); max-width: 640px; }
+
+/* 회원가입 */
+.signup-step { max-width: 640px; margin: 0 auto; }
+.signup-notice {
+  font: 400 var(--text-body-sm)/1.5 var(--font-sans);
+  color: var(--negative-strong);
+  background: var(--negative-tint-50);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3) var(--space-4);
+}
+.role-cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-6);
+  margin-top: var(--space-6);
+}
+@media (max-width: 640px) {
+  .role-cards { grid-template-columns: 1fr; }
+}
+
+.signup-form {
+  max-width: 640px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.form-row { display: flex; flex-direction: column; gap: var(--space-2); }
+.form-row--split {
+  flex-direction: row;
+  gap: var(--space-6);
+}
+.form-row--split > * { flex: 1; }
+
+.form-label {
+  font: 600 var(--text-h6)/1.4 var(--font-sans);
+  color: var(--ink);
+}
+
+.form-input,
+.form-select {
+  font: 400 var(--text-body)/1.4 var(--font-sans);
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3);
+}
+.form-input:focus-visible,
+.form-select:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 1px;
+}
+.form-input--sm { padding: var(--space-2) var(--space-3); }
+
+.cascade-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.cascade-group .form-select { flex: 1; min-width: 140px; }
+
+.skill-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.form-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font: 400 var(--text-body-sm)/1.4 var(--font-sans);
+  color: var(--ink);
+}
+
+.form-status {
+  min-height: 1.2em;
+  font: 500 var(--text-body-sm)/1.4 var(--font-sans);
+  color: var(--negative-strong);
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+}
+
+/* 탭 하이라이트 카드 그리드 */
+.candidate-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-6);
+}
+@media (max-width: 900px) {
+  .candidate-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 600px) {
+  .candidate-grid { grid-template-columns: 1fr; }
+}
+
+.job-card {
+  display: flex;
+  gap: var(--space-4);
+  align-items: flex-start;
+}
+.job-card__body { flex: 1; }
+
+.empty-state {
+  font: 400 var(--text-body-sm)/1.5 var(--font-sans);
+  color: var(--muted-strong);
+  background: var(--paper-dim);
+  border-radius: var(--radius-md);
+  padding: var(--space-6);
+  text-align: center;
+}
