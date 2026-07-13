@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>채용 플랫폼</title>
+
+  <link rel="stylesheet" as="style" crossorigin
+    href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@latest/dist/web/variable/pretendardvariable.css" />
+  <link rel="stylesheet" href="css/tokens.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <link rel="stylesheet" href="css/app.css" />
+</head>
+<body>
+  <a class="skip-link" href="#main-content">본문 바로가기</a>
+
+  <header class="site-header">
+    <div class="site-header__inner">
+      <a class="logo" href="#" data-tab="main">채용 플랫폼</a>
+
+      <nav class="tabs" role="tablist" aria-label="주요 화면 전환">
+        <button class="tab" role="tab" id="tab-btn-main" aria-selected="true" aria-controls="panel-main" data-tab="main">메인</button>
+        <button class="tab" role="tab" id="tab-btn-company" aria-selected="false" aria-controls="panel-company" data-tab="company">기업(Tab1)</button>
+        <button class="tab" role="tab" id="tab-btn-jobseeker" aria-selected="false" aria-controls="panel-jobseeker" data-tab="jobseeker">구직자(Tab2)</button>
+      </nav>
+
+      <div class="auth-bar" id="auth-bar"></div>
+    </div>
+  </header>
+
+  <main id="main-content" class="app-main">
+
+    <!-- 메인 -->
+    <section id="panel-main" class="tab-panel" role="tabpanel" aria-labelledby="tab-btn-main">
+      <h1 class="page-title">카테고리 기반으로, 꼭 맞는 채용을 찾다</h1>
+      <p class="page-lead">
+        상단 탭에서 기업/구직자 화면으로 이동할 수 있습니다. 아직 계정이 없다면 아래에서 가입을 시작하세요.
+      </p>
+      <button type="button" class="btn btn-primary" id="signup-entry-btn">회원가입 시작하기</button>
+    </section>
+
+    <!-- 회원가입 (1단계: 역할 선택 → 2단계: 기업/구직자 분기 폼) -->
+    <section id="panel-signup" class="tab-panel" role="tabpanel" hidden>
+
+      <div id="signup-step1" class="signup-step">
+        <h2 class="text-h2">회원 유형을 선택해주세요</h2>
+        <p class="signup-notice">
+          가입 후에는 <strong>기업 ↔ 구직자 역할을 전환할 수 없습니다.</strong> 신중하게 선택해주세요.
+        </p>
+        <div class="role-cards">
+          <button type="button" class="card role-card" data-role="COMPANY">
+            <h3 class="card__title">기업으로 가입</h3>
+            <p class="card__meta">채용 공고를 등록하고 조건에 맞는 인재를 검색합니다.</p>
+          </button>
+          <button type="button" class="card role-card" data-role="JOBSEEKER">
+            <h3 class="card__title">구직자로 가입</h3>
+            <p class="card__meta">공고를 열람하고 관심 있는 기업에 지원합니다.</p>
+          </button>
+        </div>
+      </div>
+
+      <!-- 기업 가입 폼: DB.md 3.3절 company_profiles 컬럼과 이름을 맞춘다 -->
+      <form id="signup-form-company" class="signup-form" hidden novalidate>
+        <h2 class="text-h2">기업 정보 입력</h2>
+
+        <div class="form-row">
+          <label class="form-label" for="company-email">이메일</label>
+          <input class="form-input" type="email" id="company-email" required autocomplete="email" />
+        </div>
+        <div class="form-row">
+          <label class="form-label" for="company-password">비밀번호</label>
+          <input class="form-input" type="password" id="company-password" required minlength="6" autocomplete="new-password" />
+        </div>
+
+        <div class="form-row">
+          <span class="form-label" id="company-industry-label">업종</span>
+          <div class="cascade-group" id="company-industry-select" aria-labelledby="company-industry-label"></div>
+        </div>
+
+        <div class="form-row">
+          <label class="form-label" for="company-size">기업 규모</label>
+          <input class="form-input" type="text" id="company-size" placeholder="예: 50~100명, 스타트업" required />
+        </div>
+
+        <div class="form-row">
+          <span class="form-label" id="company-region-label">위치</span>
+          <div class="cascade-group" id="company-region-select" aria-labelledby="company-region-label"></div>
+        </div>
+
+        <div class="form-row">
+          <span class="form-label" id="company-position-label">채용 직무</span>
+          <div class="cascade-group" id="company-position-select" aria-labelledby="company-position-label"></div>
+        </div>
+
+        <div class="form-row">
+          <label class="form-label" for="company-employment-type">고용형태</label>
+          <select class="form-select" id="company-employment-type" required>
+            <option value="">선택</option>
+            <option value="regular">정규직</option>
+            <option value="contract">계약직</option>
+            <option value="intern">인턴</option>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <span class="form-label" id="company-skills-label">필요 스킬 (다중 선택)</span>
+          <div class="skill-group" id="company-skills" aria-labelledby="company-skills-label"></div>
+        </div>
+
+        <div class="form-row form-row--split">
+          <div>
+            <label class="form-label" for="company-average-salary">평균연봉(만원, 선택)</label>
+            <input class="form-input" type="number" min="0" id="company-average-salary" />
+          </div>
+          <div>
+            <label class="form-label" for="company-hired-salary">신규입사자 평균연봉(만원, 선택)</label>
+            <input class="form-input" type="number" min="0" id="company-hired-salary" />
+          </div>
+        </div>
+
+        <p class="form-status" id="company-signup-status" role="alert" aria-live="polite"></p>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-ghost" data-signup-back>이전</button>
+          <button type="submit" class="btn btn-primary">기업으로 가입 완료</button>
+        </div>
+      </form>
+
+      <!-- 구직자 가입 폼: DB.md 3.5절 jobseeker_profiles 컬럼과 이름을 맞춘다 -->
+      <form id="signup-form-jobseeker" class="signup-form" hidden novalidate>
+        <h2 class="text-h2">구직자 정보 입력</h2>
+
+        <div class="form-row">
+          <label class="form-label" for="jobseeker-email">이메일</label>
+          <input class="form-input" type="email" id="jobseeker-email" required autocomplete="email" />
+        </div>
+        <div class="form-row">
+          <label class="form-label" for="jobseeker-password">비밀번호</label>
+          <input class="form-input" type="password" id="jobseeker-password" required minlength="6" autocomplete="new-password" />
+        </div>
+
+        <div class="form-row">
+          <span class="form-label" id="jobseeker-position-label">희망 직무</span>
+          <div class="cascade-group" id="jobseeker-position-select" aria-labelledby="jobseeker-position-label"></div>
+        </div>
+
+        <div class="form-row">
+          <label class="form-label" for="jobseeker-career-years">경력 연차</label>
+          <input class="form-input" type="number" min="0" id="jobseeker-career-years" required />
+        </div>
+
+        <div class="form-row">
+          <span class="form-label" id="jobseeker-region-label">거주 지역</span>
+          <div class="cascade-group" id="jobseeker-region-select" aria-labelledby="jobseeker-region-label"></div>
+        </div>
+
+        <div class="form-row">
+          <span class="form-label" id="jobseeker-skills-label">보유 스킬 (다중 선택)</span>
+          <div class="skill-group" id="jobseeker-skills" aria-labelledby="jobseeker-skills-label"></div>
+        </div>
+
+        <div class="form-row">
+          <label class="form-label" for="jobseeker-desired-salary">희망 연봉(만원, 선택)</label>
+          <input class="form-input" type="number" min="0" id="jobseeker-desired-salary" />
+        </div>
+
+        <div class="form-row">
+          <label class="form-label" for="jobseeker-employment-type">희망 근무형태</label>
+          <select class="form-select" id="jobseeker-employment-type" required>
+            <option value="">선택</option>
+            <option value="regular">정규직</option>
+            <option value="contract">계약직</option>
+            <option value="intern">인턴</option>
+          </select>
+        </div>
+
+        <div class="form-row form-row--split">
+          <label class="form-toggle">
+            <input type="checkbox" id="jobseeker-salary-public" checked />
+            <span>희망 연봉 공개</span>
+          </label>
+          <label class="form-toggle">
+            <input type="checkbox" id="jobseeker-region-public" checked />
+            <span>거주 지역 공개</span>
+          </label>
+        </div>
+
+        <p class="form-status" id="jobseeker-signup-status" role="alert" aria-live="polite"></p>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-ghost" data-signup-back>이전</button>
+          <button type="submit" class="btn btn-primary">구직자로 가입 완료</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- Tab1(기업) -->
+    <section id="panel-company" class="tab-panel" role="tabpanel" aria-labelledby="tab-btn-company" hidden>
+      <h2 class="text-h2">인재 검색 · 공고 관리 · 지원자 관리</h2>
+      <div id="company-highlight"></div>
+    </section>
+
+    <!-- Tab2(구직자) -->
+    <section id="panel-jobseeker" class="tab-panel" role="tabpanel" aria-labelledby="tab-btn-jobseeker" hidden>
+      <h2 class="text-h2">공고 열람 · 기업 정보 · 지원 현황</h2>
+      <div id="jobseeker-highlight"></div>
+    </section>
+
+  </main>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
