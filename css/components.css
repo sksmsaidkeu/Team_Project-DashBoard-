@@ -1,0 +1,213 @@
+/* DESIGN.md 5장 컴포넌트 스타일을 그대로 옮긴 재사용 컴포넌트. */
+
+/* 5.1 버튼 */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-6);
+  border-radius: var(--radius-pill);
+  font: 600 var(--text-label)/1.2 var(--font-sans);
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: background-color .15s ease, color .15s ease, border-color .15s ease;
+}
+.btn:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.btn-primary {
+  background: var(--pink-primary);
+  color: var(--ink);
+}
+.btn-primary:hover { background: var(--pink-hover); color: var(--ink); }
+.btn-primary:active { background: var(--pink-active); color: var(--paper); }
+.btn-primary:disabled {
+  background: var(--disabled-bg);
+  color: var(--disabled-text);
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: transparent;
+  border-color: var(--pink-active);
+  color: var(--pink-active);
+}
+.btn-secondary:hover { background: var(--pink-tint-50); }
+.btn-secondary:active { background: var(--pink-tint-100); }
+
+.btn-ghost {
+  background: transparent;
+  color: var(--ink);
+}
+.btn-ghost:hover { background: var(--pink-tint-50); color: var(--pink-active); }
+
+/* 5.2 카드 */
+.card {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  box-shadow: 0 1px 2px rgba(26, 21, 35, 0.04);
+  transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+}
+.card:hover,
+.card:focus-within {
+  transform: translateY(-4px);
+  border-color: var(--pink-primary);
+  box-shadow: 0 12px 24px rgba(255, 107, 157, 0.18);
+}
+.card__title { font: 600 var(--text-h4)/1.4 var(--font-sans); color: var(--ink); margin: 0 0 var(--space-2); }
+.card__meta { font: 400 var(--text-caption)/1.4 var(--font-sans); color: var(--muted-strong); margin: 0 0 var(--space-1); }
+
+/* role-card: 회원가입 1단계 선택 카드(카드 컴포넌트를 버튼으로 재사용) */
+.role-card {
+  display: block;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+.role-card:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+/* 5.3 매칭 스코어 링 + 카테고리 태그 */
+.match-score {
+  position: relative;
+  --score: 100;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  background: conic-gradient(
+    var(--pink-primary) calc(var(--score) * 1%),
+    var(--line) 0
+  );
+}
+.match-score::before {
+  content: '';
+  position: absolute;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--paper);
+}
+.match-score__value {
+  position: relative;
+  font: 700 var(--text-tag)/1 var(--font-sans);
+  color: var(--ink);
+}
+.match-score--matched {
+  background: conic-gradient(var(--accent-cool) 100%, var(--line) 0);
+}
+.match-score--matched .match-score__value { color: var(--ink); }
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--pink-tint-200);
+  color: var(--ink);
+  font: 600 var(--text-tag)/1.2 var(--font-sans);
+}
+.tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+/* 스킬 다중 선택 체크박스 — .tag 필 뱃지를 토글형으로 확장 */
+.tag--checkbox {
+  cursor: pointer;
+  background: var(--paper);
+  border: 1px solid var(--line-strong);
+  color: var(--ink);
+  gap: var(--space-1);
+}
+.tag--checkbox:has(.sr-only-checkbox:focus-visible) {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+.tag--checked {
+  background: var(--pink-tint-200);
+  border-color: var(--pink-primary);
+}
+.sr-only-checkbox {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* 5.4 대시보드 인사 배너 */
+.greeting-banner {
+  background: linear-gradient(135deg, var(--pink-primary), var(--pink-tint-100));
+  border-radius: var(--radius-lg);
+  padding: var(--space-8) var(--space-6);
+  color: var(--ink);
+  margin-bottom: var(--space-6);
+}
+.greeting-banner__title {
+  font: 700 var(--text-h3)/1.3 var(--font-sans);
+  margin: 0 0 var(--space-4);
+}
+.greeting-banner__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, .22);
+  color: var(--ink);
+  font: 600 var(--text-label)/1.2 var(--font-sans);
+}
+
+/* 5.5 아바타 */
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--pink-tint-200);
+  color: var(--ink);
+  font: 600 var(--text-body-sm)/1 var(--font-sans);
+}
+
+/* 5.6 통계 카드 */
+.stat-card {
+  background: rgba(255, 255, 255, .55);
+  border-radius: var(--radius-md);
+  padding: var(--space-4) var(--space-6);
+  display: inline-flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.stat-card__label { font: 500 var(--text-body-sm)/1.4 var(--font-sans); color: var(--muted-strong); }
+.stat-card__value { font: 700 var(--text-h2)/1.2 var(--font-sans); color: var(--ink); margin: 0; }
+.stat-card__comment { font: 600 var(--text-caption)/1.4 var(--font-sans); color: var(--muted-strong); }
+
+@media (prefers-reduced-motion: reduce) {
+  .match-score { transition: none; }
+  .card {
+    transition: border-color .01s, box-shadow .01s;
+    transform: none !important;
+  }
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
