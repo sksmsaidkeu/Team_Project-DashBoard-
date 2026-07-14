@@ -1,6 +1,6 @@
 import { supabase } from './supabaseClient.js';
 import { getCurrentUserProfile } from './auth.js';
-import { fetchCategoriesByIds } from './categories.js';
+import { fetchCategoriesByIds, fetchTopCategories } from './categories.js';
 import { employmentTypeLabel } from './signup.js';
 import { fetchCompaniesByIds, buildJobCategoryMap, fetchMatchingPostings, fetchMatchingJobseekers } from './matching.js';
 import { escapeHtml } from './utils.js';
@@ -329,38 +329,22 @@ export async function renderJobNews(container) {
 /* 5. 통합 검색                                                        */
 /* ------------------------------------------------------------------ */
 
-async function searchJobPostingsByTerm(term, limit = 20) {
-  const { data: categoryRows, error: categoryError } = await supabase
-    .from('categories')
-    .select('id, title, category_type, depth, parent_id')
-    .in('category_type', ['JOB', 'SKILL'])
-    .ilike('title', `%${term}%`);
-  if (categoryError) throw categoryError;
-
-  const matched = categoryRows || [];
-  if (matched.length === 0) return [];
-
-  const positionGroupIds = new Set();
-  const skillIds = new Set();
-  matched.forEach((row) => {
-    if (row.category_type === 'JOB') {
-      positionGroupIds.add(row.depth <= 1 ? row.id : row.parent_id);
-    } else if (row.category_type === 'SKILL') {
-      skillIds.add(row.id);
-    }
-  });
-
-  let companyIdsFromSkills = [];
-  if (skillIds.size > 0) {
-    const { data: skillRows, error: skillError } = await supabase
-      .from('company_profile_skills')
-      .select('company_profile_id')
-      .in('skill_category_id', Array.from(skillIds));
-    if (skillError) throw skillError;
-    companyIdsFromSkills = Array.from(new Set((skillRows || []).map((r) => r.company_profile_id)));
+/**
+ * jobId(직무 select)/regionId(지역 select)는 job_postings/company_profiles 컬럼에 직접 걸고,
+ * term(자유 텍스트)만 기존처럼 JOB/SKILL 카테고리 제목 매칭으로 처리한다(New.html 히어로 검색 반영, 2026-07-14).
+ * 세 조건은 AND로 결합된다(select로 좁힌 뒤 텍스트로 더 좁히는 방식).
+ */
+async function searchJobPostingsByTerm(term, { jobId, regionId } = {}, limit = 20) {
+  let companyIdsFromRegion = null;
+  if (regionId) {
+    const { data: regionRows, error: regionError } = await supabase
+      .from('company_profiles')
+      .select('id')
+      .eq('region_category_id', regionId);
+    if (regionError) throw regionError;
+    companyIdsFromRegion = (regionRows || []).map((r) => r.id);
+    if (companyIdsFromRegion.length === 0) return [];
   }
-
-  if (positionGroupIds.size === 0 && companyIdsFromSkills.length === 0) return [];
 
   let query = supabase
     .from('job_postings')
@@ -369,31 +353,83 @@ async function searchJobPostingsByTerm(term, limit = 20) {
     .order('posted_at', { ascending: false })
     .limit(limit);
 
-  const orParts = [];
-  if (positionGroupIds.size > 0) orParts.push(`position_category_id.in.(${Array.from(positionGroupIds).join(',')})`);
-  if (companyIdsFromSkills.length > 0) orParts.push(`company_profile_id.in.(${companyIdsFromSkills.join(',')})`);
-  query = query.or(orParts.join(','));
+  if (jobId) query = query.eq('position_category_id', jobId);
+  if (companyIdsFromRegion) query = query.in('company_profile_id', companyIdsFromRegion);
+
+  if (term) {
+    const { data: categoryRows, error: categoryError } = await supabase
+      .from('categories')
+      .select('id, title, category_type, depth, parent_id')
+      .in('category_type', ['JOB', 'SKILL'])
+      .ilike('title', `%${term}%`);
+    if (categoryError) throw categoryError;
+
+    const matched = categoryRows || [];
+    const positionGroupIds = new Set();
+    const skillIds = new Set();
+    matched.forEach((row) => {
+      if (row.category_type === 'JOB') {
+        positionGroupIds.add(row.depth <= 1 ? row.id : row.parent_id);
+      } else if (row.category_type === 'SKILL') {
+        skillIds.add(row.id);
+      }
+    });
+
+    let companyIdsFromSkills = [];
+    if (skillIds.size > 0) {
+      const { data: skillRows, error: skillError } = await supabase
+        .from('company_profile_skills')
+        .select('company_profile_id')
+        .in('skill_category_id', Array.from(skillIds));
+      if (skillError) throw skillError;
+      companyIdsFromSkills = Array.from(new Set((skillRows || []).map((r) => r.company_profile_id)));
+    }
+
+    if (positionGroupIds.size === 0 && companyIdsFromSkills.length === 0) return [];
+
+    const orParts = [];
+    if (positionGroupIds.size > 0) orParts.push(`position_category_id.in.(${Array.from(positionGroupIds).join(',')})`);
+    if (companyIdsFromSkills.length > 0) orParts.push(`company_profile_id.in.(${companyIdsFromSkills.join(',')})`);
+    query = query.or(orParts.join(','));
+  }
 
   const { data: postingRows, error: postingError } = await query;
   if (postingError) throw postingError;
   return postingRows || [];
 }
 
+function populateSelect(select, rows) {
+  rows.forEach((row) => {
+    const option = document.createElement('option');
+    option.value = row.id;
+    option.textContent = row.title;
+    select.appendChild(option);
+  });
+}
+
 /**
- * 통합 검색(hero-search-form) submit 핸들러를 연결한다. 앱 초기화 시 1회만 호출한다.
+ * 히어로 검색(직무/지역 select + 자유 텍스트) submit 핸들러를 연결한다. 앱 초기화 시 1회만 호출한다.
  */
 export function initHeroSearch() {
   const form = document.getElementById('hero-search-form');
   const input = document.getElementById('hero-search-input');
+  const jobSelect = document.getElementById('hero-search-job');
+  const regionSelect = document.getElementById('hero-search-region');
   const resultsContainer = document.getElementById('main-recent-jobs');
   if (!form || !input) return;
+
+  if (jobSelect) fetchTopCategories('JOB').then((rows) => populateSelect(jobSelect, rows));
+  if (regionSelect) fetchTopCategories('REGION').then((rows) => populateSelect(regionSelect, rows));
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!resultsContainer) return;
 
     const term = input.value.trim();
-    if (!term) {
+    const jobId = jobSelect?.value || null;
+    const regionId = regionSelect?.value || null;
+
+    if (!term && !jobId && !regionId) {
       renderRecentJobs(resultsContainer);
       return;
     }
@@ -401,10 +437,10 @@ export function initHeroSearch() {
     resultsContainer.innerHTML = '<p class="empty-state">검색 중입니다...</p>';
 
     try {
-      const postings = await searchJobPostingsByTerm(term);
+      const postings = await searchJobPostingsByTerm(term, { jobId, regionId });
       const companyMap = await fetchCompaniesByIds(postings.map((p) => p.company_profile_id));
       const categoryMap = await buildJobCategoryMap(postings, companyMap);
-      renderJobList(resultsContainer, postings, categoryMap, companyMap, `"${term}"에 대한 검색 결과가 없습니다.`);
+      renderJobList(resultsContainer, postings, categoryMap, companyMap, '조건에 맞는 검색 결과가 없습니다.');
     } catch (err) {
       console.error(err);
       resultsContainer.innerHTML = '<p class="empty-state">검색 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.</p>';
@@ -422,8 +458,9 @@ const MAX_TREND_ITEMS = 8;
 const TREND_SAMPLE_LIMIT = 500;
 
 /**
- * 랭킹 막대바 공통 렌더러(REFACT.md P1-4). rankedItems: [{title, count}, ...] 정렬된 배열.
- * renderMainTrend/renderWantedTrend는 조회·정렬만 하고 렌더링은 이 헬퍼에 위임한다.
+ * 랭킹 막대바 공통 렌더러(REFACT.md P1-4). rankedItems: [{title, count, deltaText?, deltaColor?}, ...] 정렬된 배열.
+ * deltaText/deltaColor가 있으면(renderMainTrend) 건수 옆에 증감률을 덧붙인다 — New.html 반영, 2026-07-14.
+ * renderMainTrend/renderWantedTrend/renderSkillRanking은 조회·정렬만 하고 렌더링은 이 헬퍼에 위임한다.
  */
 function renderRankBars(container, rankedItems, emptyMessage) {
   if (!rankedItems || rankedItems.length === 0) {
@@ -432,13 +469,16 @@ function renderRankBars(container, rankedItems, emptyMessage) {
   }
 
   const maxCount = rankedItems[0].count || 1;
-  container.innerHTML = rankedItems.map(({ title, count }) => {
+  container.innerHTML = rankedItems.map(({ title, count, deltaText, deltaColor }) => {
     const pct = Math.max(6, Math.round((count / maxCount) * 100));
+    const deltaHtml = deltaText
+      ? `<span class="card__meta" style="margin:0;color:${deltaColor};font-weight:600;">${escapeHtml(deltaText)}</span>`
+      : '';
     return `
       <div class="rank-bar">
         <div class="rank-bar__row">
           <span class="card__title" style="margin:0;">${escapeHtml(title)}</span>
-          <span class="card__meta" style="margin:0;">${count}건</span>
+          <span class="card__meta" style="margin:0;">${count}건 ${deltaHtml}</span>
         </div>
         <div class="rank-bar__track">
           <div class="rank-bar__fill" style="width: ${pct}%"></div>
@@ -448,9 +488,40 @@ function renderRankBars(container, rankedItems, emptyMessage) {
   }).join('');
 }
 
+const TREND_DELTA_WINDOW_DAYS = 14;
+
+/** posted_at으로부터 지난 일수. posted_at이 없으면 어느 창에도 안 걸리도록 Infinity. */
+function daysSince(dateValue) {
+  if (!dateValue) return Infinity;
+  return (Date.now() - new Date(dateValue).getTime()) / 86400000;
+}
+
+/**
+ * 최근 N일 게시 건수 대비 그 이전 N일 게시 건수의 증감률. posted_at 실측값 기반(가공 수치 아님).
+ * 이전 구간이 0건이면 %가 무의미해(분모 0) "신규"로 표기하고, 두 구간 모두 0건이면 표시하지 않는다.
+ */
+function computeTrendDelta(postingsInCategory) {
+  const recent = postingsInCategory.filter((p) => daysSince(p.posted_at) <= TREND_DELTA_WINDOW_DAYS).length;
+  const prior = postingsInCategory.filter((p) => {
+    const d = daysSince(p.posted_at);
+    return d > TREND_DELTA_WINDOW_DAYS && d <= TREND_DELTA_WINDOW_DAYS * 2;
+  }).length;
+
+  if (recent === 0 && prior === 0) return { deltaText: null, deltaColor: null };
+  if (prior === 0) return { deltaText: '▲ 신규', deltaColor: 'var(--accent-cool-strong)' };
+
+  const pct = Math.round(((recent - prior) / prior) * 100);
+  const up = pct >= 0;
+  return {
+    deltaText: `${up ? '▲' : '▼'} ${Math.abs(pct)}%`,
+    deltaColor: up ? 'var(--accent-cool-strong)' : 'var(--negative-strong)',
+  };
+}
+
 /**
  * 채용 트렌드: status='active'인 공고를 position_category_id(직군, depth 1)별로 집계해
- * 상위 랭킹을 가로 바 형태로 렌더링한다. "현재 시점 스냅샷 랭킹"(월별 추이는 이번 범위 제외).
+ * 상위 랭킹을 가로 바 형태로 렌더링한다. 증감률(▲/▼)은 posted_at 기준 최근/직전 14일 비교 실측값
+ * (New.html 반영, 2026-07-14) — 원티드 트렌드(스냅샷 집계라 개별 게시일 없음)에는 적용하지 않는다.
  */
 export async function renderMainTrend(container) {
   if (!container) return;
@@ -459,7 +530,7 @@ export async function renderMainTrend(container) {
   try {
     const { data: rows, error } = await supabase
       .from('job_postings')
-      .select('position_category_id')
+      .select('position_category_id, posted_at')
       .eq('status', 'active')
       .limit(TREND_SAMPLE_LIMIT);
     if (error) throw error;
@@ -476,10 +547,14 @@ export async function renderMainTrend(container) {
       .slice(0, MAX_TREND_ITEMS);
 
     const categoryMap = await fetchCategoriesByIds(topCounts.map(([id]) => id));
-    const ranked = topCounts.map(([categoryId, count]) => ({
-      title: categoryMap[categoryId] ? categoryMap[categoryId].title : '(알 수 없음)',
-      count,
-    }));
+    const ranked = topCounts.map(([categoryId, count]) => {
+      const postingsInCategory = postings.filter((p) => p.position_category_id === categoryId);
+      return {
+        title: categoryMap[categoryId] ? categoryMap[categoryId].title : '(알 수 없음)',
+        count,
+        ...computeTrendDelta(postingsInCategory),
+      };
+    });
 
     renderRankBars(container, ranked, '집계할 채용 공고 데이터가 없습니다.');
   } catch (err) {
@@ -549,7 +624,7 @@ const SKILL_SAMPLE_LIMIT = 1000;
 
 /**
  * 스킬 수요 랭킹: company_profile_skills를 skill_category_id별로 집계해 상위 스킬을
- * "타이틀 (빈도수)" 형태의 .tag 뱃지로 렌더링한다.
+ * 채용 트렌드/원티드 트렌드와 동일한 바(rank-bar) 형태로 렌더링한다(New.html 반영, 2026-07-14).
  */
 export async function renderSkillRanking(container) {
   if (!container) return;
@@ -574,11 +649,12 @@ export async function renderSkillRanking(container) {
       .slice(0, MAX_SKILL_RANKING);
 
     const categoryMap = await fetchCategoriesByIds(ranked.map(([id]) => id));
+    const rankedItems = ranked.map(([categoryId, count]) => ({
+      title: categoryMap[categoryId] ? categoryMap[categoryId].title : '(알 수 없음)',
+      count,
+    }));
 
-    container.innerHTML = `<div class="tag-row">${ranked.map(([categoryId, count]) => {
-      const title = categoryMap[categoryId] ? categoryMap[categoryId].title : '(알 수 없음)';
-      return `<span class="tag">${escapeHtml(title)} (${count})</span>`;
-    }).join('')}</div>`;
+    renderRankBars(container, rankedItems, '집계할 스킬 데이터가 없습니다.');
   } catch (err) {
     console.error(err);
     container.innerHTML = '<p class="empty-state">스킬 수요 랭킹을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.</p>';

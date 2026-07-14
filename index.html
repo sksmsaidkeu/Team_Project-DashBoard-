@@ -56,7 +56,8 @@
     <!-- 메인 -->
     <section id="panel-main" class="tab-panel" role="tabpanel" aria-labelledby="tab-btn-main">
 
-      <!-- 히어로: 통합 검색 (DESIGN.md 4.1절) -->
+      <!-- Group A(진입): 히어로 검색 + 역할 선택 CTA — DESIGN.md 4.1절 -->
+      <!-- 히어로: 통합 검색 -->
       <section class="hero">
         <h1 class="page-title">카테고리 기반으로, 꼭 맞는 채용을 찾다</h1>
         <p class="page-lead">
@@ -64,12 +65,20 @@
         </p>
 
         <form id="hero-search-form" class="hero-search" role="search">
-          <label class="sr-only" for="hero-search-input">직무, 스킬, 지역으로 검색</label>
+          <label class="sr-only" for="hero-search-job">직무로 필터</label>
+          <select id="hero-search-job" class="form-select hero-search__select">
+            <option value="">직무 전체</option>
+          </select>
+          <label class="sr-only" for="hero-search-region">지역으로 필터</label>
+          <select id="hero-search-region" class="form-select hero-search__select">
+            <option value="">지역 전체</option>
+          </select>
+          <label class="sr-only" for="hero-search-input">스킬, 회사명으로 검색</label>
           <input
             type="search"
             id="hero-search-input"
             class="form-input hero-search__input"
-            placeholder="직무, 스킬, 지역으로 검색"
+            placeholder="스킬, 회사명으로 검색"
           />
           <button type="submit" class="btn btn-primary">검색</button>
         </form>
@@ -89,37 +98,46 @@
         </div>
       </section>
 
-      <!-- 채용 트렌드 (다른 에이전트가 내용을 채울 빈 컨테이너). 아래 "실시간 채용 시장 동향"(원티드 실제 공고 데이터)과
-           출처가 다르므로 헤딩에 구분 문구를 병기한다. -->
-      <section class="main-section">
-        <h2 class="text-h2" id="main-trend-heading">채용 트렌드 <span class="card__meta">(우리 플랫폼 기준)</span></h2>
-        <div id="main-trend" aria-labelledby="main-trend-heading"></div>
+      <!-- Group B: 시장 인사이트 컨테이너 (DESIGN.md 4.1절 그룹핑 원칙).
+           자체 채용 트렌드 + 원티드 실시간 동향 + 스킬 랭킹/조합, 3개 섹션 모두 "시장 통계" 성격이라
+           하나의 시각적 컨테이너(배경 wash + 보더)로 묶고 상단에 오버라인 라벨을 얹는다.
+           정보량/순서/각 섹션의 출처 라벨("우리 플랫폼 기준" / "원티드 제공")은 그대로 유지 —
+           묶는 것은 시각적 그룹핑뿐, 데이터 출처 구분은 지운 게 아니다(편향/데이터 왜곡 방지). -->
+      <section class="section-group" aria-label="시장 데이터 섹션 그룹">
+        <p class="section-group__overline" aria-hidden="true">시장 데이터</p>
+
+        <!-- 채용 트렌드 (다른 에이전트가 내용을 채울 빈 컨테이너). 아래 "실시간 채용 시장 동향"(원티드 실제 공고 데이터)과
+             출처가 다르므로 헤딩에 구분 문구를 병기한다. -->
+        <div class="section-group__item">
+          <h2 class="text-h2" id="main-trend-heading">채용 트렌드 <span class="card__meta">(우리 플랫폼 기준)</span></h2>
+          <div id="main-trend" aria-labelledby="main-trend-heading"></div>
+        </div>
+
+        <!-- 실시간 채용 시장 동향: 원티드 API의 실제 라이브 공고 데이터 기준(다른 에이전트가 내용을 채울 빈 컨테이너).
+             위 "채용 트렌드"(우리 플랫폼 job_postings 기준)와는 별개의 데이터 출처다. -->
+        <div class="section-group__item">
+          <h2 class="text-h2" id="main-wanted-trend-heading">실시간 채용 시장 동향 (원티드 제공)</h2>
+          <p class="card__meta">원티드에 게시된 실제 공고 데이터를 기반으로 집계됩니다.</p>
+          <div id="main-wanted-trend" aria-labelledby="main-wanted-trend-heading"></div>
+        </div>
+
+        <!-- 스킬 수요 랭킹 & 조합 분석 (다른 에이전트가 내용을 채울 빈 컨테이너) -->
+        <div class="section-group__item">
+          <h2 class="text-h2" id="main-skill-heading">스킬 수요 랭킹 & 조합 분석</h2>
+          <h3 class="text-h3">인기 스킬 랭킹</h3>
+          <div id="main-skill-ranking" aria-labelledby="main-skill-heading"></div>
+          <h3 class="text-h3">자주 함께 요구되는 스킬 조합</h3>
+          <div id="main-skill-combo"></div>
+        </div>
       </section>
 
-      <!-- 실시간 채용 시장 동향: 원티드 API의 실제 라이브 공고 데이터 기준(다른 에이전트가 내용을 채울 빈 컨테이너).
-           위 "채용 트렌드"(우리 플랫폼 job_postings 기준)와는 별개의 데이터 출처다. -->
-      <section class="main-section">
-        <h2 class="text-h2" id="main-wanted-trend-heading">실시간 채용 시장 동향 (원티드 제공)</h2>
-        <p class="card__meta">원티드에 게시된 실제 공고 데이터를 기반으로 집계됩니다.</p>
-        <div id="main-wanted-trend" aria-labelledby="main-wanted-trend-heading"></div>
-      </section>
-
-      <!-- 스킬 수요 랭킹 & 조합 분석 (다른 에이전트가 내용을 채울 빈 컨테이너) -->
-      <section class="main-section">
-        <h2 class="text-h2" id="main-skill-heading">스킬 수요 랭킹 & 조합 분석</h2>
-        <h3 class="text-h3">인기 스킬 랭킹</h3>
-        <div id="main-skill-ranking" aria-labelledby="main-skill-heading"></div>
-        <h3 class="text-h3">자주 함께 요구되는 스킬 조합</h3>
-        <div id="main-skill-combo"></div>
-      </section>
-
-      <!-- 추천 하이라이트: 매칭 스코어 카드 가로 스크롤 캐러셀 (DESIGN.md 4.1/7.1절) -->
+      <!-- Group C(개인화): 추천 하이라이트 — 매칭 스코어 카드 가로 스크롤 캐러셀 (DESIGN.md 4.1/7.1절) -->
       <section class="main-section">
         <h2 class="text-h2" id="main-highlight-heading">추천 하이라이트</h2>
         <div id="main-highlight-carousel" class="highlight-carousel" aria-labelledby="main-highlight-heading"></div>
       </section>
 
-      <!-- 최근 공고 / 최근 인재: 2열 그리드 (DESIGN.md 4.1절) -->
+      <!-- Group D(최근 등록): 최근 공고 / 최근 인재 — 2열 그리드, 좌우 폭·비중 대칭 (DESIGN.md 4.1절) -->
       <section class="main-section">
         <div id="main-recent-section" class="recent-section">
           <div class="recent-section__col">
@@ -133,7 +151,7 @@
         </div>
       </section>
 
-      <!-- 채용 뉴스 (DESIGN.md 4.1절, PRD 6장) -->
+      <!-- Group E(읽을거리): 채용 뉴스 — 최하단, 통계와는 다른 톤 (DESIGN.md 4.1절, PRD 6장) -->
       <section class="main-section">
         <h2 class="text-h2" id="main-news-heading">채용 뉴스</h2>
         <div id="main-news" class="news-section" aria-labelledby="main-news-heading"></div>
@@ -309,6 +327,13 @@
     </section>
 
   </main>
+
+  <footer class="site-footer">
+    <div class="site-footer__inner">
+      <span class="site-footer__brand">채용 플랫폼</span>
+      <span class="site-footer__copyright">© 2026 채용 플랫폼. All rights reserved.</span>
+    </div>
+  </footer>
 
   <script type="module" src="js/app.js"></script>
 </body>
