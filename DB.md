@@ -1,4 +1,4 @@
-# DB 설계 문서 (Supabase / PostgreSQL)
+cl# DB 설계 문서 (Supabase / PostgreSQL)
 
 > 본 문서는 [`PRD.md`](./PRD.md)를 기반으로 작성된 데이터베이스 설계 문서입니다. 백엔드는 Supabase(Postgres)를 사용하며, 모든 DB 접근은 `@supabase/supabase-js` 클라이언트를 통해서만 이루어짐을 전제로 합니다.
 >

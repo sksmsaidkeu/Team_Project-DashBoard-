@@ -187,3 +187,309 @@
   padding: var(--space-6);
   text-align: center;
 }
+
+/* 구직자 대시보드 */
+.jobseeker-container {
+  display: flex;
+  gap: var(--space-6);
+}
+
+.kanban-section {
+  flex: 1.86;
+}
+
+.kanban-title {
+  font: 700 var(--text-h3)/1.2 var(--font-sans);
+  margin-bottom: var(--space-4);
+  color: var(--ink);
+}
+
+.kanban {
+  display: flex;
+  gap: var(--space-3);
+  overflow-x: auto;
+  padding-bottom: var(--space-2);
+}
+
+.kanban-col {
+  flex: 0 0 270px;
+  display: flex;
+  flex-direction: column;
+}
+
+.col-header {
+  padding: var(--space-3) var(--space-3);
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  color: white;
+  font: 600 var(--text-label)/1.2 var(--font-sans);
+  margin-bottom: var(--space-3);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  letter-spacing: -0.2px;
+}
+
+.col-header.stage-1 { background: var(--pink-primary); }
+.col-header.stage-2 { background: var(--pink-tint-100); }
+.col-header.stage-3 { background: var(--pink-tint-200); }
+.col-header.stage-4 { background: var(--pink-active); }
+
+.count {
+  background: rgba(255, 255, 255, 0.35);
+  padding: 2px 8px;
+  border-radius: 6px;
+  font: 600 var(--text-tag)/1 var(--font-sans);
+}
+
+.job-card {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  margin-bottom: var(--space-3);
+  transition: all 150ms ease;
+  cursor: pointer;
+}
+
+.job-card:hover {
+  border-color: var(--pink-primary);
+  box-shadow: 0 2px 6px rgba(255, 107, 157, 0.12);
+  transform: translateY(-1px);
+}
+
+.job-card.success {
+  background: var(--accent-cool-tint-50);
+  border-color: var(--accent-cool);
+}
+
+.job-card.error {
+  background: var(--negative-tint-50);
+  border-color: var(--negative);
+}
+
+.job-company {
+  font: 600 var(--text-body-sm)/1.2 var(--font-sans);
+  color: var(--ink);
+  margin-bottom: var(--space-1);
+  letter-spacing: -0.2px;
+}
+
+.job-role {
+  font: 400 var(--text-caption)/1.3 var(--font-sans);
+  color: var(--muted-strong);
+  margin-bottom: var(--space-2);
+  line-height: 1.3;
+}
+
+.job-date {
+  font: 400 var(--text-caption)/1.2 var(--font-sans);
+  color: var(--muted);
+  margin-bottom: var(--space-2);
+}
+
+.job-skills {
+  display: flex;
+  gap: 3px;
+  flex-wrap: wrap;
+  margin-bottom: var(--space-2);
+}
+
+.skill {
+  background: var(--pink-tint-50);
+  color: var(--pink-primary);
+  padding: 2px 5px;
+  border-radius: 5px;
+  font: 600 var(--text-tag)/1 var(--font-sans);
+}
+
+.job-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font: 400 var(--text-caption)/1.2 var(--font-sans);
+}
+
+.salary {
+  color: var(--muted-strong);
+}
+
+.status-badge {
+  font: 600 var(--text-caption)/1 var(--font-sans);
+}
+
+.status-success {
+  color: var(--accent-cool-strong);
+}
+
+.status-error {
+  color: var(--negative-strong);
+}
+
+.sidebar {
+  flex: 0 0 300px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-height: calc(100vh - 200px);
+  overflow-y: auto;
+}
+
+.sidebar-section {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+}
+
+.section-title {
+  font: 600 var(--text-h6)/1.2 var(--font-sans);
+  margin-bottom: var(--space-3);
+  color: var(--ink);
+  letter-spacing: -0.2px;
+}
+
+.stat-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: var(--space-3);
+  font: 400 var(--text-body-sm)/1.2 var(--font-sans);
+}
+
+.stat-item:last-child {
+  margin-bottom: 0;
+}
+
+.stat-label {
+  color: var(--muted-strong);
+  font-weight: 400;
+}
+
+.stat-value {
+  font: 600 var(--text-h4)/1.2 var(--font-sans);
+  color: var(--ink);
+  letter-spacing: -0.2px;
+}
+
+.stat-change {
+  font: 600 var(--text-caption)/1.2 var(--font-sans);
+  color: var(--accent-cool-strong);
+  margin-left: var(--space-1);
+}
+
+.trend-item {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--line);
+}
+
+.trend-item:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.trend-rank {
+  font: 600 var(--text-h4)/1.2 var(--font-sans);
+  color: var(--pink-primary);
+  min-width: 20px;
+  text-align: center;
+}
+
+.trend-info {
+  flex: 1;
+}
+
+.trend-name {
+  font: 600 var(--text-body-sm)/1.2 var(--font-sans);
+  color: var(--ink);
+  margin-bottom: 2px;
+}
+
+.trend-meta {
+  font: 400 var(--text-caption)/1.2 var(--font-sans);
+  color: var(--muted-strong);
+}
+
+.trend-change {
+  color: var(--accent-cool-strong);
+  font-weight: 600;
+}
+
+.rec-item {
+  margin-bottom: var(--space-3);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--line);
+}
+
+.rec-item:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.rec-badge {
+  display: inline-block;
+  background: var(--pink-tint-50);
+  color: var(--pink-primary);
+  font: 600 var(--text-caption)/1.2 var(--font-sans);
+  padding: 3px 7px;
+  border-radius: 5px;
+  margin-bottom: var(--space-2);
+}
+
+.rec-title {
+  font: 600 var(--text-body-sm)/1.2 var(--font-sans);
+  color: var(--ink);
+  margin-bottom: 2px;
+  letter-spacing: -0.1px;
+}
+
+.rec-meta {
+  font: 400 var(--text-caption)/1.4 var(--font-sans);
+  color: var(--muted-strong);
+  line-height: 1.4;
+  margin-bottom: var(--space-2);
+}
+
+.rec-btn {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--pink-primary);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font: 600 var(--text-caption)/1 var(--font-sans);
+  cursor: pointer;
+  transition: all 150ms;
+}
+
+.rec-btn:hover {
+  border-color: var(--pink-primary);
+  background: var(--pink-tint-50);
+}
+
+.news-item {
+  margin-bottom: var(--space-2);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--line);
+}
+
+.news-item:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.news-title {
+  font: 600 var(--text-caption)/1.3 var(--font-sans);
+  color: var(--ink);
+  margin-bottom: 2px;
+  line-height: 1.3;
+}
+
+.news-source {
+  font: 400 var(--text-caption)/1 var(--font-sans);
+  color: var(--muted);
+}
