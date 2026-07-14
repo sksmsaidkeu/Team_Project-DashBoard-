@@ -47,7 +47,10 @@ Deno.serve(async (req) => {
   if (!profile) return json({ error: "구직자 프로필이 없습니다." }, 403);
 
   const url = new URL(req.url);
-  const period = url.searchParams.get("period") === "week" ? "week" : "month";
+  let body: { period?: string } = {};
+  try { body = await req.json(); } catch { /* body 없음 */ }
+  const periodParam = body.period ?? url.searchParams.get("period");
+  const period = periodParam === "week" ? "week" : "month";
   const periodDays = period === "week" ? 7 : 30;
 
   const now = Date.now();

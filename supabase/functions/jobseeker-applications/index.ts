@@ -49,8 +49,12 @@ Deno.serve(async (req) => {
     .maybeSingle();
   if (!profile) return json({ error: "구직자 프로필이 없습니다." }, 403);
 
+  // supabase-js의 functions.invoke()는 파라미터를 쿼리스트링이 아니라 POST body(JSON)로 보낸다.
+  // curl 등 직접 호출 시 쿼리스트링도 계속 동작하도록 둘 다 지원한다(body 우선).
   const url = new URL(req.url);
-  const status = url.searchParams.get("status");
+  let body: { status?: string } = {};
+  try { body = await req.json(); } catch { /* body 없음 */ }
+  const status = body.status ?? url.searchParams.get("status");
 
   let query = db
     .from("jobseeker_applications")

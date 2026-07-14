@@ -27,8 +27,10 @@ Deno.serve(async (req) => {
   });
 
   const url = new URL(req.url);
-  const industryId = url.searchParams.get("industry_id");
-  const limit = Number(url.searchParams.get("limit")) || 10;
+  let body: { industry_id?: string; limit?: number } = {};
+  try { body = await req.json(); } catch { /* body 없음 */ }
+  const industryId = body.industry_id ?? url.searchParams.get("industry_id");
+  const limit = Number(body.limit ?? url.searchParams.get("limit")) || 10;
 
   let query = db
     .from("news")

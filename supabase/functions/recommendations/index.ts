@@ -56,7 +56,9 @@ Deno.serve(async (req) => {
   if (!profile) return json({ error: "구직자 프로필이 없습니다." }, 403);
 
   const url = new URL(req.url);
-  const limit = Number(url.searchParams.get("limit")) || 20;
+  let reqBody: { limit?: number } = {};
+  try { reqBody = await req.json(); } catch { /* body 없음 */ }
+  const limit = Number(reqBody.limit ?? url.searchParams.get("limit")) || 20;
 
   const [{ data: skillRows }, { data: appliedRows }] = await Promise.all([
     db.from("jobseeker_profile_skills").select("skill_category_id").eq("jobseeker_profile_id", profile.id),
