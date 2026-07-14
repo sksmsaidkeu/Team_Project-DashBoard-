@@ -202,169 +202,48 @@
 
     <!-- Tab2(구직자) -->
     <section id="panel-jobseeker" class="tab-panel" role="tabpanel" aria-labelledby="tab-btn-jobseeker" hidden>
+      <div id="jobseeker-greeting"></div>
+
       <div class="jobseeker-container">
         <div class="kanban-section">
           <div class="kanban-title">지원 현황 트래커</div>
-          <div class="kanban">
-            <div class="kanban-col">
-              <div class="col-header stage-1">
-                <span>지원완료</span>
-                <span class="count">27</span>
-              </div>
-              <div class="job-card">
-                <div class="job-company">컬팅팬</div>
-                <div class="job-role">프론트엔드 개발자</div>
-                <div class="job-date">07.10</div>
-                <div class="job-skills">
-                  <span class="skill">React</span>
-                  <span class="skill">TS</span>
-                </div>
-              </div>
-              <div class="job-card">
-                <div class="job-company">원티드랩</div>
-                <div class="job-role">웹 개발자</div>
-                <div class="job-date">07.08</div>
-                <div class="job-skills">
-                  <span class="skill">Next</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="kanban-col">
-              <div class="col-header stage-2">
-                <span>서류심사</span>
-                <span class="count">14</span>
-              </div>
-              <div class="job-card">
-                <div class="job-company">그린팀</div>
-                <div class="job-role">프론트엔드 개발자</div>
-                <div class="job-date">07.11</div>
-              </div>
-              <div class="job-card">
-                <div class="job-company">네이버</div>
-                <div class="job-role">웹 개발자</div>
-                <div class="job-date">07.01</div>
-              </div>
-            </div>
-
-            <div class="kanban-col">
-              <div class="col-header stage-3">
-                <span>면접</span>
-                <span class="count">6</span>
-              </div>
-              <div class="job-card">
-                <div class="job-company">데이터팀</div>
-                <div class="job-role">데이터 엔지니어</div>
-                <div class="job-date">07.12</div>
-              </div>
-              <div class="job-card">
-                <div class="job-company">스타트업X</div>
-                <div class="job-role">백엔드 개발자</div>
-                <div class="job-date">07.07</div>
-              </div>
-            </div>
-
-            <div class="kanban-col">
-              <div class="col-header stage-4">
-                <span>최종결과</span>
-                <span class="count">3</span>
-              </div>
-              <div class="job-card success">
-                <div class="job-company">테크스타트</div>
-                <div class="job-role">Frontend Developer</div>
-                <div class="job-footer">
-                  <span class="salary">합격</span>
-                  <span class="status-badge status-success">✓</span>
-                </div>
-                <div class="job-date">07.06</div>
-              </div>
-            </div>
+          <div class="kanban" id="jobseeker-kanban">
+            <p class="empty-state">지원 현황을 불러오는 중입니다...</p>
           </div>
         </div>
 
         <div class="sidebar">
           <div class="sidebar-section">
             <div class="section-title">인사이트</div>
-            <div class="stat-item">
-              <span class="stat-label">서류 통과자 수</span>
-              <span class="stat-value">12명<span class="stat-change">⬆ 25%</span></span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-label">면접 진행중</span>
-              <span class="stat-value">3명</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-label">거절 메일</span>
-              <span class="stat-value">2건</span>
+            <div id="jobseeker-insights">
+              <p class="empty-state">불러오는 중입니다...</p>
             </div>
           </div>
 
           <div class="sidebar-section">
             <div class="section-title">🔥 이달 핫 스킬</div>
-            <div class="trend-item">
-              <div class="trend-rank">1</div>
-              <div class="trend-info">
-                <div class="trend-name">React</div>
-                <div class="trend-meta"><span class="trend-change">📈 +15%</span></div>
-              </div>
-            </div>
-            <div class="trend-item">
-              <div class="trend-rank">2</div>
-              <div class="trend-info">
-                <div class="trend-name">TypeScript</div>
-                <div class="trend-meta"><span class="trend-change">📈 +12%</span></div>
-              </div>
-            </div>
-            <div class="trend-item">
-              <div class="trend-rank">3</div>
-              <div class="trend-info">
-                <div class="trend-name">Node.js</div>
-                <div class="trend-meta"><span class="trend-change">📈 +8%</span></div>
-              </div>
+            <div id="jobseeker-trending-skills">
+              <p class="empty-state">불러오는 중입니다...</p>
             </div>
           </div>
         </div>
       </div>
 
-      <div style="display: flex; gap: var(--space-6); margin-top: var(--space-8);">
-        <div style="flex: 1;">
+      <div class="jobseeker-bottom-row">
+        <div class="jobseeker-bottom-row__col">
           <div class="sidebar-section">
             <div class="section-title">당신을 위한 공고</div>
-            <div class="rec-item">
-              <span class="rec-badge">92%</span>
-              <div class="rec-title">프론트엔드 개발자</div>
-              <div class="rec-meta">그린팀<br/>5.5~7M · 서울</div>
-              <button class="rec-btn">지원하기</button>
-            </div>
-            <div class="rec-item">
-              <span class="rec-badge">87%</span>
-              <div class="rec-title">UI/UX 디자이너</div>
-              <div class="rec-meta">스타트업A<br/>4.5~6M · 강남</div>
-              <button class="rec-btn">지원하기</button>
-            </div>
-            <div class="rec-item">
-              <span class="rec-badge">82%</span>
-              <div class="rec-title">데이터 분석가</div>
-              <div class="rec-meta">테크스타트<br/>5.5~8M · 서초</div>
-              <button class="rec-btn">지원하기</button>
+            <div id="jobseeker-recommendations">
+              <p class="empty-state">불러오는 중입니다...</p>
             </div>
           </div>
         </div>
 
-        <div style="flex: 1;">
+        <div class="jobseeker-bottom-row__col">
           <div class="sidebar-section">
             <div class="section-title">📰 뉴스</div>
-            <div class="news-item">
-              <div class="news-title">"AI 개발자 급여 인상"</div>
-              <div class="news-source">Wanted · 2시간 전</div>
-            </div>
-            <div class="news-item">
-              <div class="news-title">"TypeScript 5.0 릴리스"</div>
-              <div class="news-source">Dev.to · 5시간 전</div>
-            </div>
-            <div class="news-item">
-              <div class="news-title">"2026 웹 개발 트렌드"</div>
-              <div class="news-source">TechBlog · 1일 전</div>
+            <div id="jobseeker-news">
+              <p class="empty-state">불러오는 중입니다...</p>
             </div>
           </div>
         </div>

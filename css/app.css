@@ -196,6 +196,10 @@
 
 .kanban-section {
   flex: 1.86;
+  /* 기본값 min-width:auto라 고정폭 .kanban-col들의 콘텐츠 폭만큼 강제로 넓어져
+     옆 .sidebar(flex-shrink:0)와 합쳐 항상 가로 스크롤이 생기던 문제 수정.
+     0으로 낮추면 내부 .kanban의 overflow-x:auto가 대신 스크롤을 담당한다. */
+  min-width: 0;
 }
 
 .kanban-title {
@@ -242,6 +246,7 @@
 }
 
 .job-card {
+  display: block;
   background: var(--paper);
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
@@ -492,4 +497,27 @@
 .news-source {
   font: 400 var(--text-caption)/1 var(--font-sans);
   color: var(--muted);
+}
+
+.jobseeker-bottom-row {
+  display: flex;
+  gap: var(--space-6);
+  margin-top: var(--space-8);
+}
+
+.jobseeker-bottom-row__col {
+  flex: 1;
+}
+
+/* 구직자 대시보드 반응형 (LAYOUT_JOBSEEKER.md 반응형 설계 참고) */
+@media (max-width: 1024px) {
+  .kanban-col { flex: 0 0 240px; }
+}
+
+@media (max-width: 768px) {
+  .jobseeker-container { flex-direction: column; }
+  .sidebar { flex: 1 1 auto; width: 100%; max-height: none; }
+  .kanban { flex-wrap: wrap; }
+  .kanban-col { flex: 0 0 calc(50% - (var(--space-3) / 2)); }
+  .jobseeker-bottom-row { flex-direction: column; }
 }
