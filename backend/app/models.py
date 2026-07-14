@@ -103,6 +103,7 @@ class JobPostingResponse(BaseModel):
     posted_at: Optional[datetime]
     closed_at: Optional[datetime]
     position_detail_category_ids: List[UUID]
+    applicant_count: int  # interaction_logs(action_type='APPLY', target_job_posting_id=이 공고)의 행 수
     created_at: datetime
     updated_at: datetime
 

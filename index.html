@@ -16,10 +16,11 @@
 
   <header class="site-header">
     <div class="site-header__inner">
-      <a class="logo" href="#" data-tab="main">채용 플랫폼</a>
+      <a class="logo" href="#" data-tab="start">채용 플랫폼</a>
 
       <nav class="tabs" role="tablist" aria-label="주요 화면 전환">
-        <button class="tab" role="tab" id="tab-btn-main" aria-selected="true" aria-controls="panel-main" data-tab="main">메인</button>
+        <button class="tab" role="tab" id="tab-btn-start" aria-selected="true" aria-controls="panel-start" data-tab="start">시작</button>
+        <button class="tab" role="tab" id="tab-btn-main" aria-selected="false" aria-controls="panel-main" data-tab="main">메인</button>
         <button class="tab" role="tab" id="tab-btn-company" aria-selected="false" aria-controls="panel-company" data-tab="company">기업(Tab1)</button>
         <button class="tab" role="tab" id="tab-btn-jobseeker" aria-selected="false" aria-controls="panel-jobseeker" data-tab="jobseeker">구직자(Tab2)</button>
       </nav>
@@ -30,13 +31,154 @@
 
   <main id="main-content" class="app-main">
 
-    <!-- 메인 -->
-    <section id="panel-main" class="tab-panel" role="tabpanel" aria-labelledby="tab-btn-main">
-      <h1 class="page-title">카테고리 기반으로, 꼭 맞는 채용을 찾다</h1>
-      <p class="page-lead">
-        상단 탭에서 기업/구직자 화면으로 이동할 수 있습니다. 아직 계정이 없다면 아래에서 가입을 시작하세요.
-      </p>
-      <button type="button" class="btn btn-primary" id="signup-entry-btn">회원가입 시작하기</button>
+    <!-- 시작 (로그인 이전 랜딩) -->
+    <section id="panel-start" class="tab-panel" role="tabpanel" aria-labelledby="tab-btn-start">
+
+      <!-- 히어로 -->
+      <div class="hero">
+        <div class="hero__content">
+          <span class="hero__eyebrow">업종 · 직무 · 스킬 · 지역 기반 매칭</span>
+          <h1 class="page-title hero__title">조건이 맞는 채용, 더 빠르게 연결됩니다</h1>
+          <p class="page-lead">
+            채용 플랫폼은 자유 입력 대신 표준 카테고리로 기업과 구직자를 정밀하게 매칭합니다.
+            기업은 조건에 맞는 인재를 찾고, 구직자는 꼭 맞는 공고를 만납니다.
+          </p>
+          <div class="hero__actions">
+            <button type="button" class="btn btn-primary" id="signup-entry-btn">회원가입 시작하기</button>
+            <span class="hero__hint">이미 계정이 있다면 오른쪽 위에서 로그인하세요.</span>
+          </div>
+        </div>
+
+        <div class="hero__visual" aria-hidden="true">
+          <div class="card hero__preview-card">
+            <div class="talent-card__head">
+              <div class="match-score match-score--matched">
+                <span class="match-score__value">일치</span>
+              </div>
+              <div>
+                <p class="card__title">프론트엔드 개발자 · 경력 3년</p>
+                <p class="card__meta">서울 · 정규직 · 희망연봉 5,000만원</p>
+              </div>
+            </div>
+            <div class="tag-row">
+              <span class="tag">React</span>
+              <span class="tag">TypeScript</span>
+              <span class="tag">Next.js</span>
+            </div>
+          </div>
+          <div class="hero__preview-chip">조건 일치 인재 12명</div>
+        </div>
+      </div>
+
+      <!-- 핵심 기능 -->
+      <section class="landing-section" aria-labelledby="landing-features-title">
+        <div class="landing-section__head">
+          <h2 id="landing-features-title" class="landing-section__title">핵심 기능</h2>
+          <p class="landing-section__lead">카테고리로 좁힌 조건이 곧바로 매칭 결과가 됩니다.</p>
+        </div>
+        <div class="feature-grid">
+          <article class="card feature-card">
+            <span class="feature-card__icon" aria-hidden="true">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            </span>
+            <h3 class="card__title">카테고리 기반 정밀 매칭</h3>
+            <p class="card__meta">업종·직무·스킬·지역 표준 카테고리로 조건을 좁혀 노이즈 없는 결과를 제공합니다.</p>
+          </article>
+          <article class="card feature-card">
+            <span class="feature-card__icon" aria-hidden="true">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </span>
+            <h3 class="card__title">인재 검색 · 공고 관리</h3>
+            <p class="card__meta">기업은 조건에 맞는 인재를 검색하고, 채용공고와 지원자를 한곳에서 관리합니다.</p>
+          </article>
+          <article class="card feature-card">
+            <span class="feature-card__icon" aria-hidden="true">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            </span>
+            <h3 class="card__title">채용 시장 분석</h3>
+            <p class="card__meta">직무·업종별 공고 추이와 연봉·경력 지표로 채용 시장의 흐름을 확인합니다.</p>
+          </article>
+          <article class="card feature-card">
+            <span class="feature-card__icon" aria-hidden="true">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+            </span>
+            <h3 class="card__title">맞춤 공고 · 간편 지원</h3>
+            <p class="card__meta">구직자는 희망 직무·지역·근무형태에 맞춘 공고를 열람하고 바로 지원합니다.</p>
+          </article>
+        </div>
+      </section>
+
+      <!-- 두 사용자 유형 -->
+      <section class="landing-section" aria-labelledby="landing-audience-title">
+        <div class="landing-section__head">
+          <h2 id="landing-audience-title" class="landing-section__title">누구를 위한 서비스인가요?</h2>
+          <p class="landing-section__lead">가입 시 역할을 한 번 선택하면 그에 맞는 화면이 준비됩니다.</p>
+        </div>
+        <div class="audience-grid">
+          <article class="card audience-card">
+            <span class="audience-card__tag">기업</span>
+            <h3 class="card__title">조건에 맞는 인재를 먼저 찾고 싶다면</h3>
+            <ul class="audience-card__list">
+              <li>조건 기반 인재 검색과 매칭 점수 확인</li>
+              <li>채용공고 등록 · 게시 · 마감 관리</li>
+              <li>공고별 지원자 관리와 열람 처리</li>
+              <li>직무·업종별 채용 시장 분석</li>
+            </ul>
+          </article>
+          <article class="card audience-card">
+            <span class="audience-card__tag audience-card__tag--seeker">구직자</span>
+            <h3 class="card__title">나에게 꼭 맞는 공고를 만나고 싶다면</h3>
+            <ul class="audience-card__list">
+              <li>희망 직무·지역·근무형태 기반 맞춤 공고</li>
+              <li>조건이 일치하는 공고 추천</li>
+              <li>관심 기업에 간편 지원</li>
+              <li>연봉·지역 공개 여부 직접 설정</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <!-- 이용 흐름 -->
+      <section class="landing-section" aria-labelledby="landing-flow-title">
+        <div class="landing-section__head">
+          <h2 id="landing-flow-title" class="landing-section__title">이용 흐름</h2>
+          <p class="landing-section__lead">세 단계면 매칭을 시작할 수 있습니다.</p>
+        </div>
+        <ol class="flow-steps">
+          <li class="flow-step">
+            <span class="flow-step__num" aria-hidden="true">1</span>
+            <div>
+              <h3 class="card__title">가입</h3>
+              <p class="card__meta">이메일과 비밀번호로 별도 인증 없이 바로 가입합니다.</p>
+            </div>
+          </li>
+          <li class="flow-step">
+            <span class="flow-step__num" aria-hidden="true">2</span>
+            <div>
+              <h3 class="card__title">역할 선택</h3>
+              <p class="card__meta">기업 또는 구직자를 선택합니다. 가입 후에는 전환할 수 없습니다.</p>
+            </div>
+          </li>
+          <li class="flow-step">
+            <span class="flow-step__num" aria-hidden="true">3</span>
+            <div>
+              <h3 class="card__title">매칭 시작</h3>
+              <p class="card__meta">등록한 카테고리 조건으로 인재와 공고가 바로 연결됩니다.</p>
+            </div>
+          </li>
+        </ol>
+      </section>
+
+      <!-- 하단 CTA -->
+      <div class="landing-cta">
+        <h2 class="landing-cta__title">지금 바로 조건에 맞는 채용을 시작하세요</h2>
+        <button type="button" class="btn btn-primary" data-goto-signup>회원가입 시작하기</button>
+      </div>
+    </section>
+
+    <!-- 메인 (로그인 이후 대시보드 자리) -->
+    <section id="panel-main" class="tab-panel" role="tabpanel" aria-labelledby="tab-btn-main" hidden>
+      <div id="main-panel-content"></div>
     </section>
 
     <!-- 회원가입 (1단계: 역할 선택 → 2단계: 기업/구직자 분기 폼) -->

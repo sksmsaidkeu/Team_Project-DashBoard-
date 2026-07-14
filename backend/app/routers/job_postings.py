@@ -24,8 +24,30 @@ def _load_position_detail_ids(service, job_posting_id: str) -> List[str]:
     return [row["position_detail_category_id"] for row in (resp.data or [])]
 
 
-def _to_response(posting: dict, detail_ids: List[str]) -> JobPostingResponse:
-    return JobPostingResponse(**posting, position_detail_category_ids=detail_ids)
+def _count_applicants(service, job_posting_id: str) -> int:
+    return _count_applicants_batch(service, [job_posting_id]).get(job_posting_id, 0)
+
+
+def _count_applicants_batch(service, posting_ids: List[str]) -> dict:
+    """posting_id -> APPLY 로그 개수 매핑. N+1 쿼리를 피하기 위해 posting_ids를 한 번에 조회한다."""
+    counts = {pid: 0 for pid in posting_ids}
+    if not posting_ids:
+        return counts
+    resp = (
+        service.table("interaction_logs")
+        .select("target_job_posting_id")
+        .eq("action_type", "APPLY")
+        .in_("target_job_posting_id", posting_ids)
+        .execute()
+    )
+    for row in resp.data or []:
+        pid = row["target_job_posting_id"]
+        counts[pid] = counts.get(pid, 0) + 1
+    return counts
+
+
+def _to_response(posting: dict, detail_ids: List[str], applicant_count: int) -> JobPostingResponse:
+    return JobPostingResponse(**posting, position_detail_category_ids=detail_ids, applicant_count=applicant_count)
 
 
 def _get_owned_posting(service, job_posting_id: str, company_profile_id: str) -> dict:
@@ -89,7 +111,7 @@ def create_job_posting(
             }
         ).execute()
 
-    return _to_response(posting, [str(did) for did in body.position_detail_category_ids])
+    return _to_response(posting, [str(did) for did in body.position_detail_category_ids], applicant_count=0)
 
 
 @router.get("", response_model=List[JobPostingResponse])
@@ -123,7 +145,12 @@ def list_job_postings(
     for row in detail_resp.data or []:
         details_by_posting.setdefault(row["job_posting_id"], []).append(row["position_detail_category_id"])
 
-    return [_to_response(p, details_by_posting.get(p["id"], [])) for p in postings]
+    applicant_counts = _count_applicants_batch(service, posting_ids)
+
+    return [
+        _to_response(p, details_by_posting.get(p["id"], []), applicant_counts.get(p["id"], 0))
+        for p in postings
+    ]
 
 
 @router.get("/{job_posting_id}", response_model=JobPostingResponse)
@@ -134,7 +161,8 @@ def get_job_posting(
     service = get_service_client()
     posting = _get_owned_posting(service, job_posting_id, company_profile["id"])
     detail_ids = _load_position_detail_ids(service, job_posting_id)
-    return _to_response(posting, detail_ids)
+    applicant_count = _count_applicants(service, job_posting_id)
+    return _to_response(posting, detail_ids, applicant_count)
 
 
 @router.put("/{job_posting_id}", response_model=JobPostingResponse)
@@ -168,7 +196,8 @@ def update_job_posting(
 
     if not update_payload:
         detail_ids = _load_position_detail_ids(service, job_posting_id)
-        return _to_response(posting, detail_ids)
+        applicant_count = _count_applicants(service, job_posting_id)
+        return _to_response(posting, detail_ids, applicant_count)
 
     update_payload["updated_at"] = now
     try:
@@ -204,7 +233,8 @@ def update_job_posting(
     if not updated_posting:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="채용공고 조회에 실패했습니다.")
     detail_ids = _load_position_detail_ids(service, job_posting_id)
-    return _to_response(updated_posting, detail_ids)
+    applicant_count = _count_applicants(service, job_posting_id)
+    return _to_response(updated_posting, detail_ids, applicant_count)
 
 
 @router.delete("/{job_posting_id}", status_code=status.HTTP_204_NO_CONTENT)

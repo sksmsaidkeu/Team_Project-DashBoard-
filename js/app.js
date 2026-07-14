@@ -3,9 +3,11 @@ import { getSession, loginWithPassword, logout } from './auth.js';
 import { initSignup } from './signup.js';
 import { renderCompanyHighlight, initCompanySubtabs } from './tab-company.js';
 import { renderJobseekerHighlight } from './tab-jobseeker.js';
+import { renderMainPanel } from './tab-main.js';
 
 const tabButtons = document.querySelectorAll('.tab');
 const panels = {
+  start: document.getElementById('panel-start'),
   main: document.getElementById('panel-main'),
   company: document.getElementById('panel-company'),
   jobseeker: document.getElementById('panel-jobseeker'),
@@ -24,6 +26,9 @@ function setActiveTab(tabName) {
     el.hidden = name !== tabName;
   });
 
+  if (tabName === 'main') {
+    renderMainPanel(document.getElementById('main-panel-content'));
+  }
   if (tabName === 'company') {
     renderCompanyHighlight(document.getElementById('company-highlight'));
     initCompanySubtabs();
@@ -39,10 +44,13 @@ tabButtons.forEach((btn) => {
 
 document.querySelector('.logo')?.addEventListener('click', (e) => {
   e.preventDefault();
-  setActiveTab('main');
+  setActiveTab('start');
 });
 
 signupEntryBtn?.addEventListener('click', () => setActiveTab('signup'));
+document.querySelectorAll('[data-goto-signup]').forEach((btn) => {
+  btn.addEventListener('click', () => setActiveTab('signup'));
+});
 
 function renderAuthBar(session) {
   if (!session) {
@@ -77,6 +85,7 @@ function renderAuthBar(session) {
 
 function refreshActiveTabContent() {
   const activeTab = document.querySelector('.tab[aria-selected="true"]')?.dataset.tab;
+  if (activeTab === 'main') renderMainPanel(document.getElementById('main-panel-content'));
   if (activeTab === 'company') {
     renderCompanyHighlight(document.getElementById('company-highlight'));
     initCompanySubtabs();
@@ -98,5 +107,5 @@ supabase.auth.onAuthStateChange((_event, session) => {
 (async () => {
   const session = await getSession();
   renderAuthBar(session);
-  setActiveTab('main');
+  setActiveTab('start');
 })();

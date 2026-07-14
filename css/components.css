@@ -155,13 +155,13 @@
 .greeting-banner {
   background: linear-gradient(135deg, var(--pink-primary), var(--pink-tint-100));
   border-radius: var(--radius-lg);
-  padding: var(--space-8) var(--space-6);
+  padding: var(--space-6);
   color: var(--ink);
   margin-bottom: var(--space-6);
 }
 .greeting-banner__title {
   font: 700 var(--text-h3)/1.3 var(--font-sans);
-  margin: 0 0 var(--space-4);
+  margin: 0 0 var(--space-3);
 }
 .greeting-banner__chip {
   display: inline-flex;
@@ -187,11 +187,18 @@
 }
 
 /* 5.6 통계 카드 */
+.greeting-banner__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
 .stat-card {
   background: rgba(255, 255, 255, .55);
   border-radius: var(--radius-md);
-  padding: var(--space-4) var(--space-6);
-  display: inline-flex;
+  padding: var(--space-3) var(--space-4);
+  display: flex;
+  flex: 1 1 240px;
+  max-width: 320px;
   flex-direction: column;
   gap: var(--space-1);
 }
@@ -225,7 +232,15 @@
   font-size: var(--text-body-sm);
 }
 
-/* 데이터 테이블 — 공고 관리 / 지원자 관리 목록 */
+/* 데이터 테이블 — 공고 관리 / 지원자 관리 목록.
+   좁은 화면에서 열이 찌그러져 헤더 텍스트가 한 글자씩 줄바꿈되는 문제(피드백 2번)를 막기 위해
+   테이블에 최소 너비를 주고 넘치는 부분은 가로 스크롤로 처리한다. */
+.table-scroll {
+  overflow-x: auto;
+}
+.table-scroll .data-table {
+  min-width: 640px;
+}
 .data-table {
   width: 100%;
   border-collapse: collapse;
@@ -301,6 +316,56 @@
   justify-content: flex-end;
   gap: var(--space-3);
   margin-top: var(--space-6);
+}
+
+/* 스킬 다중 선택 체크박스 — 그룹 소제목(피드백 6번, SKILL은 DB상 단일 레벨이라 프런트에서만 그룹핑) */
+.skill-group-block { margin-bottom: var(--space-4); }
+.skill-group-block:last-child { margin-bottom: 0; }
+.skill-group-block__title {
+  font: 600 var(--text-caption)/1.4 var(--font-sans);
+  color: var(--muted-strong);
+  margin: 0 0 var(--space-2);
+}
+/* SKILL 카테고리가 200개 이상이라 목록이 매우 길어지므로 스크롤 영역으로 감싼다 */
+.skill-picker-scroll {
+  max-height: 280px;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3);
+}
+
+/* 인재 검색 결과 페이지네이션(피드백 6번) */
+.pagination {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
+  margin-top: var(--space-6);
+}
+.pagination__btn {
+  min-width: 36px;
+  height: 36px;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line-strong);
+  background: var(--paper);
+  color: var(--ink);
+  font: 600 var(--text-body-sm)/1 var(--font-sans);
+  cursor: pointer;
+}
+.pagination__btn[aria-current="true"] {
+  background: var(--pink-primary);
+  border-color: var(--pink-primary);
+  color: var(--ink);
+}
+.pagination__btn:disabled {
+  color: var(--disabled-text);
+  cursor: not-allowed;
+}
+.pagination__btn:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
 }
 
 @media (prefers-reduced-motion: reduce) {

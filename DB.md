@@ -227,6 +227,10 @@ erDiagram
 - `job_postings` N : M `categories`(JOB, 직무 상세) → `job_posting_position_details` 조인 테이블
 - `job_postings` 1 : N `interaction_logs`(대상), `jobseeker_profiles` 1 : N `interaction_logs`(대상)
 
+> 공고별 지원자 수(Tab1 공고 관리 화면)는 `job_postings`에 별도 카운터 컬럼을 두지 않고, `interaction_logs`에서
+> `action_type='APPLY' AND target_job_posting_id=<공고 id>`인 행 개수를 API 응답 시점에 집계해서 내려준다
+> (`backend/app/routers/job_postings.py`). 스키마에는 반영하지 않은 파생값이다.
+
 ## 5. 채용 시장 분석(P1 · v1.1) 데이터 반영 설명
 
 PRD 7.1절의 "필요 데이터"를 다음과 같이 스키마에 반영했다.

@@ -16,3 +16,7 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+
+# Wanted API fetch 캐시(import_wanted_data.py) — 공고 URL의 client_id 쿼리파라미터에 실제
+# WANTED_API 자격증명 값이 그대로 포함되어 있어 커밋하지 않는다. 재fetch로 언제든 재생성 가능.
+backend/scripts/data/

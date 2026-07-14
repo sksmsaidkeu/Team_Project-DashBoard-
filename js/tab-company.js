@@ -85,31 +85,173 @@ export async function renderCompanyHighlight(container) {
         }));
     }
 
+    const [jobDemand, skillDemand] = await Promise.all([
+      fetchSimilarIndustryJobDemand(company),
+      fetchSimilarIndustrySkillDemand(company),
+    ]);
+
     const categoryIds = new Set();
     candidates.forEach((c) => {
       categoryIds.add(c.desired_position_category_id);
       categoryIds.add(c.region_category_id);
       (c.matchedSkillIds || []).forEach((id) => categoryIds.add(id));
     });
+    jobDemand.detailTags.forEach((row) => categoryIds.add(row.position_detail_category_id));
+    skillDemand.forEach((row) => categoryIds.add(row.skill_category_id));
     const categoryMap = await fetchCategoriesByIds(Array.from(categoryIds));
 
-    renderUI(container, candidates, categoryMap);
+    renderUI(container, candidates, categoryMap, jobDemand, skillDemand);
   } catch (err) {
     console.error(err);
     container.innerHTML = '<p class="empty-state">인재 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.</p>';
   }
 }
 
-function renderUI(container, candidates, categoryMap) {
+/**
+ * 같은 직무(position_category_id)로 등록된 다른 기업들의 실제 채용 동향을 job_postings 기준으로
+ * 집계한다(2차 테스트 피드백 1번 — company_profile_skills(가입 시 등록값, 실제 채용 활동과 괴리 가능)
+ * 대신 실제 게시중(status='active')인 job_postings + job_posting_position_details를 사용한다).
+ * 반환값: 활성 공고 총 건수, 직무 상세 상위 태그(최대 5개), 고용형태 분포, 경력대(3구간) 요약.
+ */
+async function fetchSimilarIndustryJobDemand(company) {
+  const empty = { activeCount: 0, detailTags: [], employmentTypeCounts: {}, careerBuckets: [] };
+  if (!company.position_category_id) return empty;
+
+  const { data: peerRows, error: peerError } = await supabase
+    .from('company_profiles')
+    .select('id')
+    .eq('position_category_id', company.position_category_id)
+    .neq('id', company.id);
+  if (peerError) throw peerError;
+
+  const peerIds = (peerRows || []).map((row) => row.id);
+  if (peerIds.length === 0) return empty;
+
+  const { data: postingRows, error: postingError } = await supabase
+    .from('job_postings')
+    .select('id, employment_type, annual_from, annual_to')
+    .in('company_profile_id', peerIds)
+    .eq('status', 'active');
+  if (postingError) throw postingError;
+
+  const postings = postingRows || [];
+  if (postings.length === 0) return empty;
+
+  const postingIds = postings.map((p) => p.id);
+
+  const { data: detailRows, error: detailError } = await supabase
+    .from('job_posting_position_details')
+    .select('position_detail_category_id')
+    .in('job_posting_id', postingIds);
+  if (detailError) throw detailError;
+
+  const detailCounts = {};
+  (detailRows || []).forEach((row) => {
+    detailCounts[row.position_detail_category_id] = (detailCounts[row.position_detail_category_id] || 0) + 1;
+  });
+  const detailTags = Object.entries(detailCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([position_detail_category_id, count]) => ({ position_detail_category_id, count }));
+
+  const employmentTypeCounts = {};
+  postings.forEach((p) => {
+    employmentTypeCounts[p.employment_type] = (employmentTypeCounts[p.employment_type] || 0) + 1;
+  });
+
+  // 경력대는 세분화하지 않고 3구간으로 단순화한다.
+  const careerBucketDefs = [
+    { label: '신입(0년)', test: (p) => p.annual_from === 0 },
+    { label: '주니어(1~3년)', test: (p) => p.annual_from >= 1 && p.annual_from <= 3 },
+    { label: '시니어(4년 이상)', test: (p) => p.annual_from >= 4 },
+  ];
+  const careerBuckets = careerBucketDefs
+    .map(({ label, test }) => ({ label, count: postings.filter(test).length }))
+    .filter((bucket) => bucket.count > 0);
+
+  return {
+    activeCount: postings.length, detailTags, employmentTypeCounts, careerBuckets,
+  };
+}
+
+/**
+ * 같은 직무(position_category_id)로 등록된 다른 기업들이 가입 시 등록한 필요 스킬
+ * (company_profile_skills)을 집계한다 — "비슷한 스킬을 공유하는 타 기업들이 주로 보는 스킬"
+ * 카드용(2차 테스트 피드백 1번, job_postings 기반 채용 동향 카드와는 별개로 분리 유지).
+ */
+async function fetchSimilarIndustrySkillDemand(company) {
+  if (!company.position_category_id) return [];
+
+  const { data: peerRows, error: peerError } = await supabase
+    .from('company_profiles')
+    .select('id')
+    .eq('position_category_id', company.position_category_id)
+    .neq('id', company.id);
+  if (peerError) throw peerError;
+
+  const peerIds = (peerRows || []).map((row) => row.id);
+  if (peerIds.length === 0) return [];
+
+  const { data: skillRows, error: skillError } = await supabase
+    .from('company_profile_skills')
+    .select('skill_category_id')
+    .in('company_profile_id', peerIds);
+  if (skillError) throw skillError;
+
+  const counts = {};
+  (skillRows || []).forEach((row) => {
+    counts[row.skill_category_id] = (counts[row.skill_category_id] || 0) + 1;
+  });
+
+  return Object.entries(counts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([skill_category_id, company_count]) => ({ skill_category_id, company_count }));
+}
+
+function renderUI(container, candidates, categoryMap, jobDemand, skillDemand) {
   const title = (id) => (categoryMap[id] ? categoryMap[id].title : '-');
+  const { activeCount, detailTags, employmentTypeCounts, careerBuckets } = jobDemand;
+
+  const detailTagsHtml = detailTags.length > 0
+    ? `<div class="tag-row">${detailTags.map((row) => `<span class="tag">${title(row.position_detail_category_id)} · ${row.count}건</span>`).join('')}</div>`
+    : '';
+
+  // 고용형태·경력대 요약을 한 줄로 합쳐 카드 세로 길이를 줄인다(피드백 5차 3번 — 공간 최적화).
+  const jobSummary = [
+    ...Object.entries(employmentTypeCounts).map(([type, count]) => `${employmentTypeLabel(type)} ${count}건`),
+    ...careerBuckets.map((bucket) => `${bucket.label} ${bucket.count}건`),
+  ].join(' · ');
+
+  const jobDemandHtml = activeCount > 0
+    ? `
+      <p class="stat-card__value">${activeCount}건</p>
+      ${detailTagsHtml}
+      ${jobSummary ? `<p class="stat-card__comment">${jobSummary}</p>` : ''}
+    `
+    : '<p class="stat-card__comment">아직 비교할 만한 동일 직무 기업의 게시중인 공고가 없습니다.</p>';
+
+  const skillDemandHtml = skillDemand.length > 0
+    ? `<div class="tag-row">${skillDemand.map((row) => `<span class="tag">${title(row.skill_category_id)} · ${row.company_count}곳</span>`).join('')}</div>`
+    : '<p class="stat-card__comment">아직 비교할 만한 동일 직무 기업의 등록된 필요 스킬이 없습니다.</p>';
 
   const bannerHtml = `
     <div class="greeting-banner">
-      <p class="greeting-banner__title">이번 주 조건에 맞는 인재 현황입니다</p>
-      <div class="stat-card">
-        <p class="stat-card__label">조건에 맞는 인재</p>
-        <p class="stat-card__value">${candidates.length}명</p>
-        <p class="stat-card__comment">등록하신 직무 · 지역 · 필요 스킬 기준 하드 필터 결과입니다</p>
+      <p class="greeting-banner__title">회원님께 어울리는 추천 정보</p>
+      <div class="greeting-banner__stats">
+        <div class="stat-card">
+          <p class="stat-card__label">조건에 맞는 인재</p>
+          <p class="stat-card__value">${candidates.length}명</p>
+          <p class="stat-card__comment">직무 · 지역 · 필요 스킬 기준</p>
+        </div>
+        <div class="stat-card">
+          <p class="stat-card__label">비슷한 직종 기업들의 인기 스킬</p>
+          ${skillDemandHtml}
+        </div>
+        <div class="stat-card">
+          <p class="stat-card__label">비슷한 직종 기업들의 채용 동향</p>
+          ${jobDemandHtml}
+        </div>
       </div>
     </div>
   `;

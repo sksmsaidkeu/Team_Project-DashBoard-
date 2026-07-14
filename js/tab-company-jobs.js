@@ -96,6 +96,7 @@ export async function renderJobsPanel(container) {
         <td>${p.annual_from}년${p.annual_to != null ? `~${p.annual_to}년` : ' 이상'}</td>
         <td>${statusBadge(p.status)}</td>
         <td>${formatDateTime(p.posted_at)}</td>
+        <td>${p.applicant_count ?? 0}명</td>
         <td class="table-actions">
           <button type="button" class="btn btn-ghost btn-sm" data-action="edit" data-id="${p.id}">수정</button>
           ${p.status === 'draft' ? `<button type="button" class="btn btn-secondary btn-sm" data-action="publish" data-id="${p.id}">게시</button>` : ''}
@@ -106,12 +107,14 @@ export async function renderJobsPanel(container) {
     `).join('');
 
     listArea.innerHTML = `
-      <table class="data-table">
-        <thead>
-          <tr><th>직군/직무상세</th><th>고용형태</th><th>경력</th><th>상태</th><th>게시일</th><th>액션</th></tr>
-        </thead>
-        <tbody>${rows}</tbody>
-      </table>
+      <div class="table-scroll">
+        <table class="data-table">
+          <thead>
+            <tr><th>직군/직무상세</th><th>고용형태</th><th>경력</th><th>상태</th><th>게시일</th><th>지원자</th><th>액션</th></tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
     `;
 
     listArea.querySelectorAll('[data-action]').forEach((btn) => {

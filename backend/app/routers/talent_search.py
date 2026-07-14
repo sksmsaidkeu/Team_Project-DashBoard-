@@ -4,6 +4,8 @@ DB.md 3.5절 jobseeker_profiles를 직무(desired_position_category_id)/지역(r
 희망근무형태(desired_employment_type)/희망연봉(desired_salary)/스킬(jobseeker_profile_skills)
 기준으로 하드 필터링한다. 비공개(is_region_public=false 또는 is_salary_public=false) 인재는
 검색 결과 자체에서 제외한다 — js/tab-company.js에 이미 구현된 프런트엔드 하드 필터와 동일한 정책이다.
+조건을 지정하지 않은 항목(직무/지역/스킬)은 자사 등록값으로 대체하지 않고 필터를 적용하지 않는다 —
+아무 조건도 없으면 공개 설정된 전체 인재가 반환된다.
 
 sort=score 파라미터를 주면 PRD 5장 소프트 스코어링 가중치(스킬 40%/직무 25%/지역·연봉 15%/활동성 10%/
 최신성 10%)를 반영한 근사 점수를 함께 계산한다. 직무·지역은 이미 하드 필터로 일치가 보장되므로
@@ -31,7 +33,19 @@ WEIGHT_RECENCY = 10
 
 
 def _parse_ts(value: str) -> datetime:
-    return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    # Postgres timestamptz의 소수 자리수가 3/6자리가 아닐 수 있어(예: 5자리) 파이썬 3.10의
+    # datetime.fromisoformat이 그대로는 파싱에 실패한다. 소수부를 6자리로 정규화한 뒤 파싱한다.
+    text = value.replace("Z", "+00:00")
+    if "." in text:
+        head, _, tail = text.partition(".")
+        frac, tz = tail, ""
+        for i, ch in enumerate(tail):
+            if ch in "+-":
+                frac, tz = tail[:i], tail[i:]
+                break
+        frac = (frac + "000000")[:6]
+        text = f"{head}.{frac}{tz}"
+    return datetime.fromisoformat(text)
 
 
 def _parse_uuid_list(raw: Optional[str]) -> Optional[List[UUID]]:
@@ -49,17 +63,17 @@ def _parse_uuid_list(raw: Optional[str]) -> Optional[List[UUID]]:
 
 @router.get("", response_model=List[TalentCandidateResponse])
 def search_talents(
-    position_category_id: Optional[UUID] = Query(None, description="미지정 시 자사 등록 직무로 필터링"),
-    region_category_id: Optional[UUID] = Query(None, description="미지정 시 자사 등록 지역으로 필터링"),
+    position_category_id: Optional[UUID] = Query(None, description="미지정 시 직무 필터 미적용(전체)"),
+    region_category_id: Optional[UUID] = Query(None, description="미지정 시 지역 필터 미적용(전체)"),
     employment_type: Optional[EmploymentType] = Query(None),
     skill_category_ids: Optional[str] = Query(
-        None, description="콤마로 구분된 SKILL category_id 목록. 미지정 시 자사 등록 필요 스킬 사용"
+        None, description="콤마로 구분된 SKILL category_id 목록. 미지정 시 스킬 필터 미적용(전체)"
     ),
     min_career_years: Optional[int] = Query(None, ge=0),
     max_career_years: Optional[int] = Query(None, ge=0),
     max_desired_salary: Optional[int] = Query(None, ge=0),
     sort: Optional[str] = Query(None, pattern="^(score)$"),
-    limit: int = Query(20, ge=1, le=100),
+    limit: int = Query(20, ge=1, le=500),
     offset: int = Query(0, ge=0),
     company_profile: dict = Depends(get_current_company_profile),
 ):
@@ -70,20 +84,8 @@ def search_talents(
     if region_category_id is not None:
         validate_category_id(region_category_id, "REGION", "region_category_id")
 
-    effective_position_id = position_category_id or UUID(company_profile["position_category_id"])
-    effective_region_id = region_category_id or UUID(company_profile["region_category_id"])
-
     parsed_skill_ids = _parse_uuid_list(skill_category_ids)
-    if parsed_skill_ids is None:
-        skill_resp = (
-            service.table("company_profile_skills")
-            .select("skill_category_id")
-            .eq("company_profile_id", company_profile["id"])
-            .execute()
-        )
-        required_skill_ids = [row["skill_category_id"] for row in (skill_resp.data or [])]
-    else:
-        required_skill_ids = [str(sid) for sid in parsed_skill_ids]
+    required_skill_ids = [str(sid) for sid in parsed_skill_ids] if parsed_skill_ids else []
 
     query = (
         service.table("jobseeker_profiles")
@@ -93,9 +95,11 @@ def search_talents(
         )
         .eq("is_region_public", True)
         .eq("is_salary_public", True)
-        .eq("desired_position_category_id", str(effective_position_id))
-        .eq("region_category_id", str(effective_region_id))
     )
+    if position_category_id is not None:
+        query = query.eq("desired_position_category_id", str(position_category_id))
+    if region_category_id is not None:
+        query = query.eq("region_category_id", str(region_category_id))
     if employment_type:
         query = query.eq("desired_employment_type", employment_type)
     if min_career_years is not None:

@@ -3,3 +3,6 @@ uvicorn[standard]>=0.29,<1.0
 supabase>=2.4.0,<3.0
 pydantic>=2.6,<3.0
 pydantic-settings>=2.2,<3.0
+# scripts/ (seed_categories, import_wanted_data, seed_jobseekers) 전용: Supabase/Wanted REST 호출 + .env 로드
+requests>=2.31,<3.0
+python-dotenv>=1.0,<2.0

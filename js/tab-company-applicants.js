@@ -109,15 +109,17 @@ export async function renderApplicantsPanel(container) {
     `).join('');
 
     listArea.innerHTML = `
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>직무/경력</th><th>지역</th><th>희망연봉</th><th>희망근무형태</th>
-            <th>스킬</th><th>지원일시</th><th>열람여부</th><th>액션</th>
-          </tr>
-        </thead>
-        <tbody>${rows}</tbody>
-      </table>
+      <div class="table-scroll">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>직무/경력</th><th>지역</th><th>희망연봉</th><th>희망근무형태</th>
+              <th>스킬</th><th>지원일시</th><th>열람여부</th><th>액션</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
     `;
 
     listArea.querySelectorAll('[data-action="view"]').forEach((btn) => {
