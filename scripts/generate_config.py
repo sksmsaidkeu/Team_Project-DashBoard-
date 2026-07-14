@@ -26,37 +26,12 @@ js/config.js는 브라우저에 그대로 로드되는 정적 JS 파일이므로
 import os
 import sys
 
+from _common import find_repo_root, load_env
+
 # Windows 콘솔(cp949 등)에서 한글 출력이 깨지는 것을 방지 (Python 3.7+)
 for _stream in (sys.stdout, sys.stderr):
     if hasattr(_stream, "reconfigure"):
         _stream.reconfigure(encoding="utf-8")
-
-
-def find_repo_root(start):
-    """.env 파일을 담고 있는 디렉터리를 상위로 탐색해 찾는다."""
-    d = start
-    while True:
-        if os.path.isfile(os.path.join(d, ".env")):
-            return d
-        parent = os.path.dirname(d)
-        if parent == d:
-            return start
-        d = parent
-
-
-def load_env(path):
-    """외부 dotenv 패키지 없이 KEY=VALUE 형식의 .env를 직접 파싱한다."""
-    env = {}
-    if not os.path.isfile(path):
-        return env
-    with open(path, encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if not line or line.startswith("#") or "=" not in line:
-                continue
-            key, value = line.split("=", 1)
-            env[key.strip()] = value.strip()
-    return env
 
 
 CONFIG_TEMPLATE = """\

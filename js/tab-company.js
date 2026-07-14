@@ -4,6 +4,13 @@ import { fetchCategoriesByIds } from './categories.js';
 import { employmentTypeLabel } from './signup.js';
 
 /**
+ * ⚠️ 임시 프리뷰 구현 — company 브랜치 담당자가 자유롭게 재설계/교체해도 됩니다.
+ * 초기 스캐폴드 단계에서 만들어진 것으로, 하드 필터 인재 매칭 카드만 보여줄 뿐
+ * Tab1의 정식 기능(공고 관리, 지원자 관리 등)은 포함하지 않습니다.
+ * 아래 쿼리 로직은 js/matching.js의 fetchMatchingJobseekers(company, limit)로 공용 추출되었습니다
+ * (REFACT.md P0-1, common 브랜치 작업). 재설계 시 이 공용 함수로 교체할지 common 브랜치
+ * 담당자와 조율하세요. (README.md 참고)
+ *
  * Tab1(기업) 콘텐츠 최상단 하이라이트.
  * PRD 5장 1단계(하드 필터)만 구현 — 스킬/직무/지역 소프트 스코어링은 이번 범위 밖.
  * 로그인한 기업의 position_category_id/region_category_id/필요 스킬을 하드 필터 조건으로,

@@ -15,6 +15,7 @@ import {
   renderSkillCombo,
   renderWantedTrend,
 } from './tab-main.js';
+import { escapeHtml, tabForRole } from './utils.js';
 
 const tabButtons = document.querySelectorAll('.tab');
 const panels = {
@@ -25,15 +26,19 @@ const panels = {
 };
 const authBar = document.getElementById('auth-bar');
 
-function escapeHtml(value) {
-  if (value == null) return '';
-  return String(value)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
+// 탭 전환마다 매번 재조회하지 않도록 관련 DOM 참조를 모듈 스코프에서 한 번만 캐싱한다(REFACT.md P2-2).
+const mainEls = {
+  highlight: document.getElementById('main-highlight-carousel'),
+  recentJobs: document.getElementById('main-recent-jobs'),
+  recentTalent: document.getElementById('main-recent-talent'),
+  news: document.getElementById('main-news'),
+  trend: document.getElementById('main-trend'),
+  wantedTrend: document.getElementById('main-wanted-trend'),
+  skillRanking: document.getElementById('main-skill-ranking'),
+  skillCombo: document.getElementById('main-skill-combo'),
+};
+const companyHighlightEl = document.getElementById('company-highlight');
+const jobseekerHighlightEl = document.getElementById('jobseeker-highlight');
 
 function setActiveTab(tabName) {
   tabButtons.forEach((btn) => {
@@ -46,20 +51,20 @@ function setActiveTab(tabName) {
   });
 
   if (tabName === 'main') {
-    renderMainHighlight(document.getElementById('main-highlight-carousel'));
-    renderRecentJobs(document.getElementById('main-recent-jobs'));
-    renderRecentTalent(document.getElementById('main-recent-talent'));
-    renderJobNews(document.getElementById('main-news'));
-    renderMainTrend(document.getElementById('main-trend'));
-    renderWantedTrend(document.getElementById('main-wanted-trend'));
-    renderSkillRanking(document.getElementById('main-skill-ranking'));
-    renderSkillCombo(document.getElementById('main-skill-combo'));
+    renderMainHighlight(mainEls.highlight);
+    renderRecentJobs(mainEls.recentJobs);
+    renderRecentTalent(mainEls.recentTalent);
+    renderJobNews(mainEls.news);
+    renderMainTrend(mainEls.trend);
+    renderWantedTrend(mainEls.wantedTrend);
+    renderSkillRanking(mainEls.skillRanking);
+    renderSkillCombo(mainEls.skillCombo);
   }
   if (tabName === 'company') {
-    renderCompanyHighlight(document.getElementById('company-highlight'));
+    renderCompanyHighlight(companyHighlightEl);
   }
   if (tabName === 'jobseeker') {
-    renderJobseekerHighlight(document.getElementById('jobseeker-highlight'));
+    renderJobseekerHighlight(jobseekerHighlightEl);
   }
 }
 
@@ -111,7 +116,7 @@ function renderAuthBar(session) {
       showWelcomeModal({
         role,
         mode: 'login',
-        onContinue: () => setActiveTab(role === 'COMPANY' ? 'company' : role === 'JOBSEEKER' ? 'jobseeker' : 'main'),
+        onContinue: () => setActiveTab(tabForRole(role)),
       });
     });
     document.getElementById('signup-entry-btn-header').addEventListener('click', () => setActiveTab('signup'));
@@ -128,10 +133,10 @@ function renderAuthBar(session) {
 function refreshActiveTabContent() {
   const activeTab = document.querySelector('.tab[aria-selected="true"]')?.dataset.tab;
   if (activeTab === 'main') {
-    renderMainHighlight(document.getElementById('main-highlight-carousel'));
+    renderMainHighlight(mainEls.highlight);
   }
-  if (activeTab === 'company') renderCompanyHighlight(document.getElementById('company-highlight'));
-  if (activeTab === 'jobseeker') renderJobseekerHighlight(document.getElementById('jobseeker-highlight'));
+  if (activeTab === 'company') renderCompanyHighlight(companyHighlightEl);
+  if (activeTab === 'jobseeker') renderJobseekerHighlight(jobseekerHighlightEl);
 }
 
 initSignup({
@@ -139,15 +144,24 @@ initSignup({
     showWelcomeModal({
       role: userType,
       mode: 'signup',
-      onContinue: () => setActiveTab(userType === 'COMPANY' ? 'company' : 'jobseeker'),
+      onContinue: () => setActiveTab(tabForRole(userType)),
     });
   },
 });
 
 initHeroSearch();
 
+// onAuthStateChange는 구독 시점에 현재 세션으로 즉시 한 번 발화한다(합성 이벤트). 그 최초 발화는
+// 아래 시작 IIFE의 setActiveTab('main')이 이미 처리하므로 건너뛰어 renderMainHighlight 등이
+// 페이지 로드마다 중복 실행되는 것을 막는다(REFACT.md P2-1). 이후의 실제 로그인/로그아웃 이벤트는
+// 정상적으로 refreshActiveTabContent를 호출한다.
+let isInitialAuthEvent = true;
 supabase.auth.onAuthStateChange((_event, session) => {
   renderAuthBar(session);
+  if (isInitialAuthEvent) {
+    isInitialAuthEvent = false;
+    return;
+  }
   refreshActiveTabContent();
 });
 

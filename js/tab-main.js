@@ -1,7 +1,9 @@
 import { supabase } from './supabaseClient.js';
 import { getCurrentUserProfile } from './auth.js';
-import { fetchCategoriesByIds, fetchCategoryById } from './categories.js';
+import { fetchCategoriesByIds } from './categories.js';
 import { employmentTypeLabel } from './signup.js';
+import { fetchCompaniesByIds, buildJobCategoryMap, fetchMatchingPostings, fetchMatchingJobseekers } from './matching.js';
+import { escapeHtml } from './utils.js';
 
 /**
  * 메인 탭(공통 셸의 중립 진입점) 데이터 조회 + 렌더링.
@@ -27,20 +29,6 @@ function formatDate(value) {
 }
 
 /**
- * 원티드 API/뉴스 API(GNews) 등 제3자 출처 텍스트를 innerHTML에 삽입하기 전 이스케이프한다.
- * XSS 방지용 최소 구현(외부 라이브러리 없이).
- */
-function escapeHtml(value) {
-  if (value == null) return '';
-  return String(value)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-
-/**
  * 배열을 keyFn 결과값 기준으로 그룹핑해 등장 횟수를 센다.
  * 채용 트렌드/스킬 랭킹/스킬 조합 집계(6절)에서 공통으로 사용하는 client-side group-by 유틸.
  */
@@ -52,45 +40,6 @@ function countBy(array, keyFn) {
     counts.set(key, (counts.get(key) || 0) + 1);
   });
   return counts;
-}
-
-/**
- * job_postings.position_category_id는 직군(depth 1)이므로(DB.md 3.8절),
- * 구직자의 desired_position_category_id(직무, depth 2 가능)를 직군 레벨로 환산해 비교한다.
- * tab-jobseeker.js의 resolvePositionGroupId와 동일한 방식.
- */
-async function resolvePositionGroupId(categoryId) {
-  if (!categoryId) return null;
-  const category = await fetchCategoryById(categoryId);
-  if (!category) return null;
-  if (category.depth <= 1) return category.id;
-  return category.parent_id;
-}
-
-/**
- * 공고 목록에 필요한 카테고리(직군/업종)를 한 번에 조회해 title 맵을 만든다.
- */
-async function buildJobCategoryMap(postings, companyMap) {
-  const ids = new Set();
-  postings.forEach((p) => {
-    ids.add(p.position_category_id);
-    const company = companyMap[p.company_profile_id];
-    if (company) ids.add(company.industry_category_id);
-  });
-  return fetchCategoriesByIds(Array.from(ids));
-}
-
-async function fetchCompaniesByIds(companyIds) {
-  const uniqueIds = Array.from(new Set(companyIds.filter(Boolean)));
-  if (uniqueIds.length === 0) return {};
-  const { data, error } = await supabase
-    .from('company_profiles')
-    .select('id, industry_category_id, region_category_id')
-    .in('id', uniqueIds);
-  if (error) throw error;
-  const map = {};
-  (data || []).forEach((c) => { map[c.id] = c; });
-  return map;
 }
 
 /**
@@ -125,114 +74,6 @@ function jobPostingCardHtml(posting, categoryMap, companyMap, { scoreLabel, neut
 /* ------------------------------------------------------------------ */
 /* 1. 추천 하이라이트                                                  */
 /* ------------------------------------------------------------------ */
-
-async function fetchJobseekerHighlightMatches(jobseeker, limit) {
-  const { data: skillRows, error: skillError } = await supabase
-    .from('jobseeker_profile_skills')
-    .select('skill_category_id')
-    .eq('jobseeker_profile_id', jobseeker.id);
-  if (skillError) throw skillError;
-  const mySkillIds = (skillRows || []).map((row) => row.skill_category_id);
-
-  const positionGroupId = await resolvePositionGroupId(jobseeker.desired_position_category_id);
-
-  let query = supabase
-    .from('job_postings')
-    .select('id, company_profile_id, position_category_id, employment_type, annual_from, annual_to, status, posted_at')
-    .eq('status', 'active')
-    .order('posted_at', { ascending: false });
-
-  if (positionGroupId) query = query.eq('position_category_id', positionGroupId);
-  if (jobseeker.desired_employment_type) query = query.eq('employment_type', jobseeker.desired_employment_type);
-
-  const { data: postingRows, error: postingError } = await query;
-  if (postingError) throw postingError;
-
-  let postings = postingRows || [];
-  const companyMap = await fetchCompaniesByIds(postings.map((p) => p.company_profile_id));
-
-  if (jobseeker.region_category_id) {
-    postings = postings.filter((p) => {
-      const company = companyMap[p.company_profile_id];
-      return company && company.region_category_id === jobseeker.region_category_id;
-    });
-  }
-
-  if (mySkillIds.length > 0 && postings.length > 0) {
-    const companyIds = Array.from(new Set(postings.map((p) => p.company_profile_id)));
-    const { data: companySkillRows, error: companySkillError } = await supabase
-      .from('company_profile_skills')
-      .select('company_profile_id, skill_category_id')
-      .in('company_profile_id', companyIds);
-    if (companySkillError) throw companySkillError;
-
-    const companySkillMap = {};
-    (companySkillRows || []).forEach((row) => {
-      if (!companySkillMap[row.company_profile_id]) companySkillMap[row.company_profile_id] = [];
-      companySkillMap[row.company_profile_id].push(row.skill_category_id);
-    });
-
-    postings = postings.filter((p) => (companySkillMap[p.company_profile_id] || []).some((id) => mySkillIds.includes(id)));
-  }
-
-  postings = postings.slice(0, limit);
-  const categoryMap = await buildJobCategoryMap(postings, companyMap);
-  return { postings, categoryMap, companyMap };
-}
-
-async function fetchCompanyHighlightCandidates(company, limit) {
-  const { data: skillRows, error: skillError } = await supabase
-    .from('company_profile_skills')
-    .select('skill_category_id')
-    .eq('company_profile_id', company.id);
-  if (skillError) throw skillError;
-  const requiredSkillIds = (skillRows || []).map((row) => row.skill_category_id);
-
-  let query = supabase
-    .from('jobseeker_profiles')
-    .select('id, career_years, desired_salary, desired_employment_type, desired_position_category_id, region_category_id')
-    .eq('is_region_public', true)
-    .eq('is_salary_public', true);
-
-  if (company.position_category_id) query = query.eq('desired_position_category_id', company.position_category_id);
-  if (company.region_category_id) query = query.eq('region_category_id', company.region_category_id);
-
-  const { data: candidateRows, error: candidateError } = await query;
-  if (candidateError) throw candidateError;
-
-  let candidates = candidateRows || [];
-
-  if (requiredSkillIds.length > 0 && candidates.length > 0) {
-    const candidateIds = candidates.map((c) => c.id);
-    const { data: candidateSkillRows, error: candidateSkillError } = await supabase
-      .from('jobseeker_profile_skills')
-      .select('jobseeker_profile_id, skill_category_id')
-      .in('jobseeker_profile_id', candidateIds);
-    if (candidateSkillError) throw candidateSkillError;
-
-    const skillsByCandidate = {};
-    (candidateSkillRows || []).forEach((row) => {
-      if (!skillsByCandidate[row.jobseeker_profile_id]) skillsByCandidate[row.jobseeker_profile_id] = [];
-      skillsByCandidate[row.jobseeker_profile_id].push(row.skill_category_id);
-    });
-
-    candidates = candidates
-      .filter((c) => (skillsByCandidate[c.id] || []).some((id) => requiredSkillIds.includes(id)))
-      .map((c) => ({ ...c, matchedSkillIds: (skillsByCandidate[c.id] || []).filter((id) => requiredSkillIds.includes(id)) }));
-  }
-
-  candidates = candidates.slice(0, limit);
-
-  const categoryIds = new Set();
-  candidates.forEach((c) => {
-    categoryIds.add(c.desired_position_category_id);
-    categoryIds.add(c.region_category_id);
-    (c.matchedSkillIds || []).forEach((id) => categoryIds.add(id));
-  });
-  const categoryMap = await fetchCategoriesByIds(Array.from(categoryIds));
-
-  return { candidates, categoryMap };
-}
 
 async function fetchNeutralLatestJobs(limit) {
   const { data: postingRows, error } = await supabase
@@ -279,7 +120,7 @@ export async function renderMainHighlight(container) {
     const session = await getCurrentUserProfile();
 
     if (session && session.userType === 'JOBSEEKER' && session.profile) {
-      const { postings, categoryMap, companyMap } = await fetchJobseekerHighlightMatches(session.profile, MAX_HIGHLIGHT);
+      const { postings, categoryMap, companyMap } = await fetchMatchingPostings(session.profile, MAX_HIGHLIGHT);
       if (postings.length === 0) {
         container.innerHTML = '<p class="empty-state">현재 조건에 맞는 추천 공고가 없습니다. 프로필 조건을 넓혀보세요.</p>';
         return;
@@ -289,7 +130,7 @@ export async function renderMainHighlight(container) {
     }
 
     if (session && session.userType === 'COMPANY' && session.profile) {
-      const { candidates, categoryMap } = await fetchCompanyHighlightCandidates(session.profile, MAX_HIGHLIGHT);
+      const { candidates, categoryMap } = await fetchMatchingJobseekers(session.profile, MAX_HIGHLIGHT);
       if (candidates.length === 0) {
         container.innerHTML = '<p class="empty-state">현재 조건에 맞는 공개 인재가 없습니다. 조건을 넓혀보세요.</p>';
         return;
@@ -581,6 +422,33 @@ const MAX_TREND_ITEMS = 8;
 const TREND_SAMPLE_LIMIT = 500;
 
 /**
+ * 랭킹 막대바 공통 렌더러(REFACT.md P1-4). rankedItems: [{title, count}, ...] 정렬된 배열.
+ * renderMainTrend/renderWantedTrend는 조회·정렬만 하고 렌더링은 이 헬퍼에 위임한다.
+ */
+function renderRankBars(container, rankedItems, emptyMessage) {
+  if (!rankedItems || rankedItems.length === 0) {
+    container.innerHTML = `<p class="empty-state">${emptyMessage}</p>`;
+    return;
+  }
+
+  const maxCount = rankedItems[0].count || 1;
+  container.innerHTML = rankedItems.map(({ title, count }) => {
+    const pct = Math.max(6, Math.round((count / maxCount) * 100));
+    return `
+      <div class="rank-bar">
+        <div class="rank-bar__row">
+          <span class="card__title" style="margin:0;">${escapeHtml(title)}</span>
+          <span class="card__meta" style="margin:0;">${count}건</span>
+        </div>
+        <div class="rank-bar__track">
+          <div class="rank-bar__fill" style="width: ${pct}%"></div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+/**
  * 채용 트렌드: status='active'인 공고를 position_category_id(직군, depth 1)별로 집계해
  * 상위 랭킹을 가로 바 형태로 렌더링한다. "현재 시점 스냅샷 랭킹"(월별 추이는 이번 범위 제외).
  */
@@ -603,28 +471,17 @@ export async function renderMainTrend(container) {
     }
 
     const counts = countBy(postings, (p) => p.position_category_id);
-    const ranked = Array.from(counts.entries())
+    const topCounts = Array.from(counts.entries())
       .sort((a, b) => b[1] - a[1])
       .slice(0, MAX_TREND_ITEMS);
 
-    const categoryMap = await fetchCategoriesByIds(ranked.map(([id]) => id));
-    const maxCount = ranked[0][1];
+    const categoryMap = await fetchCategoriesByIds(topCounts.map(([id]) => id));
+    const ranked = topCounts.map(([categoryId, count]) => ({
+      title: categoryMap[categoryId] ? categoryMap[categoryId].title : '(알 수 없음)',
+      count,
+    }));
 
-    container.innerHTML = ranked.map(([categoryId, count]) => {
-      const title = categoryMap[categoryId] ? categoryMap[categoryId].title : '(알 수 없음)';
-      const pct = Math.max(6, Math.round((count / maxCount) * 100));
-      return `
-        <div class="rank-bar">
-          <div class="rank-bar__row">
-            <span class="card__title" style="margin:0;">${escapeHtml(title)}</span>
-            <span class="card__meta" style="margin:0;">${count}건</span>
-          </div>
-          <div class="rank-bar__track">
-            <div class="rank-bar__fill" style="width: ${pct}%"></div>
-          </div>
-        </div>
-      `;
-    }).join('');
+    renderRankBars(container, ranked, '집계할 채용 공고 데이터가 없습니다.');
   } catch (err) {
     console.error(err);
     container.innerHTML = '<p class="empty-state">채용 트렌드를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.</p>';
@@ -672,29 +529,14 @@ export async function renderWantedTrend(container) {
       .limit(MAX_WANTED_TREND_ITEMS);
     if (error) throw error;
 
-    const ranked = rows || [];
-    if (ranked.length === 0) {
+    const rows2 = rows || [];
+    if (rows2.length === 0) {
       container.innerHTML = `<p class="empty-state">${WANTED_TREND_EMPTY_MESSAGE}</p>`;
       return;
     }
 
-    const maxCount = ranked[0].job_count || 1;
-
-    container.innerHTML = ranked.map((row) => {
-      const title = row.title || '(알 수 없음)';
-      const pct = Math.max(6, Math.round((row.job_count / maxCount) * 100));
-      return `
-        <div class="rank-bar">
-          <div class="rank-bar__row">
-            <span class="card__title" style="margin:0;">${escapeHtml(title)}</span>
-            <span class="card__meta" style="margin:0;">${row.job_count}건</span>
-          </div>
-          <div class="rank-bar__track">
-            <div class="rank-bar__fill" style="width: ${pct}%"></div>
-          </div>
-        </div>
-      `;
-    }).join('');
+    const ranked = rows2.map((row) => ({ title: row.title || '(알 수 없음)', count: row.job_count }));
+    renderRankBars(container, ranked, WANTED_TREND_EMPTY_MESSAGE);
   } catch (err) {
     // relation does not exist 등 테이블 미배포 상태도 여기서 잡혀 empty-state로 안내한다(정상 상태, 버그 아님).
     console.error(err);
@@ -746,6 +588,10 @@ export async function renderSkillRanking(container) {
 const MAX_SKILL_COMBO = 5;
 const SKILL_COMBO_SAMPLE_LIMIT = 2000;
 
+// (REFACT.md P2-6) O(n²) 조합 계산 결과를 세션 동안 캐싱해 탭 재방문 시 재계산을 생략한다.
+// ponytail: 세션 내 무효화 로직 없음(페이지 새로고침 전까지 고정) — 데이터가 자주 바뀌면 TTL 추가.
+let skillComboHtmlCache = null;
+
 /**
  * 스킬 조합 분석: company_profile_skills를 company_profile_id로 그룹핑한 뒤, 그룹 내부의
  * 스킬 2개 조합(순서 무관)의 등장 횟수를 집계해 상위 조합을 "A + B (N건)" 형태로 보여준다.
@@ -753,6 +599,12 @@ const SKILL_COMBO_SAMPLE_LIMIT = 2000;
  */
 export async function renderSkillCombo(container) {
   if (!container) return;
+
+  if (skillComboHtmlCache != null) {
+    container.innerHTML = skillComboHtmlCache;
+    return;
+  }
+
   container.innerHTML = '<p class="empty-state">스킬 조합을 분석하는 중입니다...</p>';
 
   try {
@@ -781,7 +633,8 @@ export async function renderSkillCombo(container) {
     });
 
     if (pairCounts.size === 0) {
-      container.innerHTML = '<p class="empty-state">아직 데이터가 충분하지 않습니다.</p>';
+      skillComboHtmlCache = '<p class="empty-state">아직 데이터가 충분하지 않습니다.</p>';
+      container.innerHTML = skillComboHtmlCache;
       return;
     }
 
@@ -793,7 +646,7 @@ export async function renderSkillCombo(container) {
     ranked.forEach(([pairKey]) => pairKey.split('::').forEach((id) => allIds.add(id)));
     const categoryMap = await fetchCategoriesByIds(Array.from(allIds));
 
-    container.innerHTML = `
+    skillComboHtmlCache = `
       <ul class="combo-list">
         ${ranked.map(([pairKey, count]) => {
           const [idA, idB] = pairKey.split('::');
@@ -810,6 +663,7 @@ export async function renderSkillCombo(container) {
         }).join('')}
       </ul>
     `;
+    container.innerHTML = skillComboHtmlCache;
   } catch (err) {
     console.error(err);
     container.innerHTML = '<p class="empty-state">스킬 조합 분석을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.</p>';

@@ -32,6 +32,8 @@ import sys
 import urllib.request
 import urllib.error
 
+from _common import find_repo_root, load_env, supabase_upsert, is_placeholder
+
 # Windows 콘솔(cp949 등)에서 한글 출력이 깨지는 것을 방지 (Python 3.7+)
 for _stream in (sys.stdout, sys.stderr):
     if hasattr(_stream, "reconfigure"):
@@ -41,33 +43,6 @@ for _stream in (sys.stdout, sys.stderr):
 # 이 레포 어디에도 절대 URL이 문서화되어 있지 않아, 공개적으로 알려진 host를 기본값으로 쓴다.
 # 필요 시 .env 또는 환경변수 WANTED_API_BASE_URL로 override 가능.
 DEFAULT_BASE_URL = "https://openapi.wanted.jobs/v1"
-
-
-def find_repo_root(start):
-    """.env 파일을 담고 있는 디렉터리를 상위로 탐색해 찾는다."""
-    d = start
-    while True:
-        if os.path.isfile(os.path.join(d, ".env")):
-            return d
-        parent = os.path.dirname(d)
-        if parent == d:
-            return start
-        d = parent
-
-
-def load_env(path):
-    """외부 dotenv 패키지 없이 KEY=VALUE 형식의 .env를 직접 파싱한다."""
-    env = {}
-    if not os.path.isfile(path):
-        return env
-    with open(path, encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if not line or line.startswith("#") or "=" not in line:
-                continue
-            key, value = line.split("=", 1)
-            env[key.strip()] = value.strip()
-    return env
 
 
 def fetch_categories(base_url, client_id, client_secret):
@@ -135,37 +110,6 @@ def build_upsert_rows(payload):
             })
 
     return depth1_rows, depth2_rows
-
-
-def supabase_upsert(supabase_url, service_role_key, table, rows, on_conflict):
-    """Supabase REST(PostgREST)로 upsert한다. return=representation으로 반영된 행을 그대로 받는다."""
-    if not rows:
-        return []
-    url = "{}/rest/v1/{}?on_conflict={}".format(supabase_url.rstrip("/"), table, on_conflict)
-    body = json.dumps(rows).encode("utf-8")
-    req = urllib.request.Request(
-        url,
-        data=body,
-        method="POST",
-        headers={
-            "apikey": service_role_key,
-            "Authorization": "Bearer {}".format(service_role_key),
-            "Content-Type": "application/json",
-            "Prefer": "resolution=merge-duplicates,return=representation",
-        },
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            return json.loads(resp.read().decode("utf-8"))
-    except urllib.error.HTTPError as e:
-        detail = e.read().decode("utf-8", errors="replace")
-        raise RuntimeError("Supabase upsert HTTPError {} ({}): {}".format(e.code, table, detail)) from e
-    except urllib.error.URLError as e:
-        raise RuntimeError("Supabase 연결 실패({}): {}".format(table, e)) from e
-
-
-def is_placeholder(value):
-    return not value or "YOUR_" in value.upper() or "YOUR-" in value.upper()
 
 
 def main():

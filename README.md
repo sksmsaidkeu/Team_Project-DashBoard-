@@ -62,6 +62,16 @@ python -m http.server 8000
 
 추천/매칭 기능은 카테고리 체계 및 스코어링 로직을 화면과 무관하게 공통으로 사용합니다.
 
+### 공용 매칭 헬퍼 (`js/matching.js`, `js/categories.js`)
+
+`common` 브랜치가 하드 필터 매칭 쿼리를 아래 공용 함수로 추출했습니다(REFACT.md P0-1/P0-2). `company`/`jobseeker` 브랜치에서 `js/tab-company.js`/`js/tab-jobseeker.js`를 재설계할 때 이 함수들을 가져다 쓸 수 있습니다(채택 여부/시점은 각 담당자 재량).
+
+- `fetchMatchingJobseekers(company, limit)` — `js/matching.js`. 기업 -> 구직자 하드 필터 매칭. `company`는 `company_profiles` 행(`id`/`position_category_id`/`region_category_id` 사용). `limit`으로 반환 건수 조절(기업 탭은 전체 목록, 메인 탭은 하이라이트 N개). 반환: `{ candidates, categoryMap }`.
+- `fetchMatchingPostings(jobseeker, limit)` — `js/matching.js`. 구직자 -> 공고 하드 필터 매칭. `jobseeker`는 `jobseeker_profiles` 행(`id`/`desired_position_category_id`/`desired_employment_type`/`region_category_id` 사용). 반환: `{ postings, categoryMap, companyMap }`.
+- `resolvePositionGroupId(categoryId)` — `js/categories.js`. `job_postings.position_category_id`(직군, depth 1)와 구직자의 `desired_position_category_id`(직무, depth 2 가능)를 비교하기 위해 직군 레벨로 환산한다.
+
+매칭 규칙(하드 필터 조건) 자체가 바뀔 때는 이 파일들만 고치면 되도록 설계되어 있습니다.
+
 ## 화면 구조 (IA)
 
 - **메인**: 통합 검색, 추천 하이라이트
@@ -99,6 +109,7 @@ python -m http.server 8000
 1. 원티드(Wanted) API(`openapi.json`, `openapi (1).json`)에서 실제로 가져오는 변수명·타입·구조가 `PRD.md`(3장 카테고리 체계, 4장 데이터 모델, 4.5장 JobPosting)에 적힌 것과 **동일한지** 다시 확인합니다. PRD.md의 변수명은 원티드 API와 통일하는 것을 원칙으로 작성되어 있지만, 실제 API 응답(필드 유무, enum 값, nullable 여부 등)이 문서 작성 시점과 달라졌을 수 있습니다.
 2. 차이가 발견되면, 코드부터 구현하지 말고 **`PRD.md`/`DB.md`를 먼저 갱신**한 뒤 구현을 시작합니다 — 두 문서가 실제 API와 어긋난 상태로 구현이 진행되면 이후 다른 브랜치와의 merge 시 데이터 모델 불일치가 발생합니다.
 3. 특히 `EMPLOYMENT_TYPE`(고용형태, flat 문자열), `average_salary`/`hired_salary`(공고가 아닌 기업 단위 집계), `position_category_id`+직무 상세(복수) 구조처럼 이번에 원티드 API에 맞춰 재설계된 부분은 실제 연동 시 어긋나기 쉬우니 우선적으로 재검증하세요.
+4. **`company`/`jobseeker` 브랜치 담당자만 해당**: `js/tab-company.js`/`js/tab-jobseeker.js`는 초기 스캐폴드 단계에서 만들어진 **임시 프리뷰 구현**입니다(하드 필터 기반 인재/공고 매칭 카드만 보여줌 — Tab1/Tab2의 정식 기능인 공고 관리·지원자 관리·기업 정보·지원 현황 등은 아직 없음). 각자 브랜치에서 자유롭게 재설계/교체해도 됩니다. 두 파일에 남아 있는 매칭 쿼리 로직은 이제 `js/matching.js`의 `fetchMatchingJobseekers`/`fetchMatchingPostings`(위 "공용 매칭 헬퍼" 절 참고)로 공용 추출되어 있으니, 재설계 시 이 함수를 그대로 쓸지 여부를 `common` 브랜치 담당자와 조율하세요.
 
 ## 기술 스택 (예정)
 

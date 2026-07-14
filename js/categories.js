@@ -69,6 +69,19 @@ export async function fetchCategoriesByIds(ids) {
 }
 
 /**
+ * job_postings.position_category_id는 직군(depth 1)이므로(DB.md 3.8절),
+ * 구직자의 desired_position_category_id(직무, depth 2 가능)를 직군 레벨로 환산해 비교한다.
+ * (REFACT.md P0-2) js/tab-main.js와 js/tab-jobseeker.js에 중복되어 있던 헬퍼를 공용화한 것.
+ */
+export async function resolvePositionGroupId(categoryId) {
+  if (!categoryId) return null;
+  const category = await fetchCategoryById(categoryId);
+  if (!category) return null;
+  if (category.depth <= 1) return category.id;
+  return category.parent_id;
+}
+
+/**
  * 계층형 카테고리(업종/직무/지역)를 대분류→중분류→소분류 순서로 선택하는 select 그룹을 렌더링한다.
  * 자식 카테고리가 더 없으면 그 단계를 최종(leaf) 선택값으로 취급한다.
  */

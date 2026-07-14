@@ -33,9 +33,10 @@ export async function getCurrentUserProfile() {
   }
 
   if (userRow.user_type === 'COMPANY') {
+    // (REFACT.md P2-5) 실제로 소비되는 컬럼만 명시(js/matching.js, js/tab-company.js 등에서 사용).
     const { data: companyProfile, error: profileError } = await supabase
       .from('company_profiles')
-      .select('*')
+      .select('id, position_category_id, region_category_id')
       .eq('user_id', authUser.id)
       .maybeSingle();
     if (profileError) console.error('company_profiles fetch error', profileError);
@@ -43,9 +44,10 @@ export async function getCurrentUserProfile() {
   }
 
   if (userRow.user_type === 'JOBSEEKER') {
+    // (REFACT.md P2-5) 실제로 소비되는 컬럼만 명시(js/matching.js, js/tab-jobseeker.js 등에서 사용).
     const { data: jobseekerProfile, error: profileError } = await supabase
       .from('jobseeker_profiles')
-      .select('*')
+      .select('id, desired_position_category_id, desired_employment_type, region_category_id')
       .eq('user_id', authUser.id)
       .maybeSingle();
     if (profileError) console.error('jobseeker_profiles fetch error', profileError);
