@@ -126,7 +126,7 @@
 | `--negative-strong` (텍스트로) | `--negative-tint-50` (#FCE7E7) | **5.30 : 1** | 통과 | 통과 | 실패 배지를 "연한 배경 + 진한 텍스트"로 표현할 때(DESIGN_2 콘텐츠 원칙 반영) |
 | `--ink` | `--pink-tint-200` (#FFA6C4) | **9.79 : 1** | 통과 | 통과 | 파이프라인 1단계(`--stage-applied`) 배경, 아바타 배경(5.5절) 등에 사용 |
 | `--ink` | 반투명 흰색 22% over `--pink-primary` (합성 ≈ #FF8CB3) | **8.21 : 1** | 통과 | 통과 | 대시보드 인사 배너(5.4절)의 반투명 통계 칩 — DESIGN_2 원안의 흰 텍스트(2.68:1 탈락)는 금지, `--ink`로 대체 |
-| `--line` (경계선) | `--paper` | 1.26 : 1 | — | 탈락(3:1 미달) | 장식용 구분선 전용으로 한정. 입력창 등 "이해에 필수적인" 경계에는 사용 금지 |
+| `--line` (경계선, 2026-07-13 `#FBDCE7`로 교체) | `--paper` | 1.22 : 1 | — | 탈락(3:1 미달) | 장식용 구분선 전용으로 한정. 입력창 등 "이해에 필수적인" 경계에는 사용 금지 |
 | `--line-strong` (#84797D) | `--paper` | **4.03 : 1** | — | 통과 | input, select 등 기능적 테두리에 사용 |
 
 **대안 정리**
@@ -137,29 +137,47 @@
 - `--negative`도 `--pink-primary`와 동일한 규칙을 따른다: 배경 채움 + `--ink` 텍스트로만 쓰고, 텍스트 색으로 직접 쓸 때는 `--negative-strong`만 사용한다.
 - 그라데이션/반투명 레이어(대시보드 인사 배너 등) 위에 글자를 올릴 때는 흰 텍스트를 기본값으로 가정하지 말고, 실제 합성 색 기준으로 `--ink` 대비를 확인한 뒤 사용한다(2.3절 합성 chip 행 참고).
 
+### 2.4 참고 레퍼런스(`1b_대시보드_reference.html`) 검토 결과
+
+팀에서 공유한 구직자 대시보드 목업(`1b_대시보드_reference.html`, 이후 삭제됨)의 시각 언어 중 색상/폰트/카드 스타일만 이 디자인 시스템에 반영했다(칸반 트래커 등 화면 콘텐츠 자체는 Tab2 담당 브랜치 영역이라 이 문서 범위 밖).
+
+**채택**
+- 폰트: Pretendard → Noto Sans KR(3.1절).
+- `--line`(장식용 카드 테두리): `#F0DCE3` → `#FBDCE7` — 레퍼런스의 카드 테두리 톤에 맞춤. 장식 전용 토큰이라 재검증 없이 교체 가능(대비 1.22:1, 기존과 마찬가지로 통과 대상 아님).
+- 헤더 하단 보더: `--line` → `--pink-tint-50`(`#FFE9F0`) — 레퍼런스 헤더 보더(`#FFE3ED`)와 거의 동일한 기존 토큰이라 새 값 없이 대체.
+- 바디/콘텐츠 2-tone 프레임: `body` 배경을 `--paper` → `--paper-dim`으로, `.app-main`에 `--paper` 배경을 명시해 레퍼런스의 옅은 외곽(`#F5EEF0`)/콘텐츠(`#FFF9FB`) 2단 배경 느낌을 기존 토큰만으로 재현(텍스트 대비에는 영향 없음).
+
+**미채택 (실제 계산 후 기각)**
+- `--ink`를 레퍼런스의 `#2B2230`으로 바꾸는 안: 계산 결과 `--ink`+`--pink-hover` 대비가 4.92:1 → **4.21:1로 AA(4.5:1) 미달**, `--ink`+`--negative`도 5.20:1 → 4.45:1로 근접 실패해 버튼/배지 다수가 회귀한다. 기존 `#1A1523` 유지.
+- `--muted`/`--muted-strong`을 레퍼런스의 `#CBA6B5`/`#9A8790`으로 바꾸는 안: `--paper` 위 대비가 각각 2.09:1 / 3.23:1로 현재 값(3.45:1 / 5.03:1)보다 크게 낮아 캡션·보조 텍스트가 AA를 만족하지 못한다. 채택하지 않음.
+- `--accent-cool`을 레퍼런스의 "합격" 색(`#4CAF7D`)으로 바꾸는 안: 의미상 큰 차이가 없고, 파생 팔레트(strong/tint-50) 전체를 재계산해야 하는 비용 대비 이득이 낮아 보류.
+
 ---
 
 ## 3. 타이포그래피
 
 ### 3.1 폰트 로딩
 
+> **2026-07-13 변경**: 참고 레퍼런스(`1b_대시보드_reference.html`)의 타이포그래피를 반영해 Pretendard → **Noto Sans KR**로 교체했다. 아래 3.2절의 웨이트 구분 원칙(역할별 굵기 단계)은 그대로 유지되며, 폰트 패밀리만 교체되었다.
+
 ```html
-<link rel="stylesheet" as="style" crossorigin
-  href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@latest/dist/web/variable/pretendardvariable.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800;900&display=swap" />
 ```
 
 ```css
 :root {
-  --font-sans: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont,
-    system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo',
-    'Noto Sans KR', 'Malgun Gothic', sans-serif;
+  --font-sans: 'Noto Sans KR', system-ui, -apple-system, BlinkMacSystemFont,
+    Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo',
+    'Malgun Gothic', sans-serif;
 }
 body { font-family: var(--font-sans); }
 ```
 
 ### 3.2 역할별 웨이트 구분
 
-| 역할 | Pretendard 웨이트 | 적용 대상 | 근거 |
+| 역할 | 웨이트 | 적용 대상 | 근거 |
 |---|---|---|---|
 | Display | 800 (ExtraBold) | 히어로 헤드라인(메인 페이지 1개소만) | 브랜드 임팩트가 필요한 유일한 지점이라 최고 굵기를 예산처럼 아껴 씀 |
 | Heading | 700 (Bold) → 600 (SemiBold) | h1/h2는 700, h3~h6·카드 타이틀은 600 | 위계가 내려갈수록 굵기를 낮춰 시각적 소음을 줄임 |

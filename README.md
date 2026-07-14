@@ -4,6 +4,19 @@
 
 > 자세한 요구사항은 [`PRD.md`](./PRD.md)를 참고하세요. 이 문서는 PRD를 요약한 개발 참고용 개요입니다.
 
+## 로컬 실행 방법
+
+**`index.html`을 더블클릭해서 직접 열지 마세요.** `js/app.js`가 `<script type="module">`이라, `file://` 경로로 열면 브라우저 CORS 정책 때문에 스크립트 자체가 로드되지 않아 탭 전환/로그인/회원가입 등 모든 기능이 조용히 먹통이 됩니다(파일을 열면 이를 알려주는 빨간 배너가 뜹니다).
+
+로컬 HTTP 서버로 띄운 뒤 그 주소로 접속하세요. 예:
+
+```bash
+python -m http.server 8000
+# 이후 브라우저에서 http://localhost:8000/index.html 접속
+```
+
+(VS Code의 Live Server 확장, `npx serve` 등 다른 정적 서버도 동일하게 사용 가능합니다.)
+
 ## 회원 유형 및 가입 정책
 
 - 회원가입 시 `user_type`(`COMPANY` / `JOBSEEKER`)을 필수로 선택합니다.
@@ -70,6 +83,14 @@
 ## 미확정 이슈
 
 역할 전환 정책, 가중치 자동학습 포함 여부, 카테고리 depth 제한, 민감정보(연봉/지역) 비공개 옵션 등 아직 확정되지 않은 이슈가 있으며, 구현 시 임시값으로 처리됩니다. 자세한 내용과 임시 처리 방안은 [`PRD.md`](./PRD.md) 8장을 참고하세요.
+
+## 로컬 환경설정 (Supabase 자격증명)
+
+이 프로젝트는 빌드 도구가 없는 정적 SPA라 `.env`를 브라우저가 직접 읽을 수 없습니다. `.env`에 `SUPABASE_URL`/`SUPABASE_ANON_KEY`(및 선택적으로 `NEWS_API_KEY`)를 채운 뒤 `python scripts/generate_config.py`를 실행하면 `js/config.js`가 자동 갱신됩니다.
+
+> **이 저장소는 public입니다.** `js/config.js`는 실제 키 값이 그대로 들어가는 생성 파일이라 `.gitignore`에 등록되어 있으며, 각자 로컬에서 위 명령으로 직접 생성해야 합니다(커밋되지 않으므로 다른 브랜치/팀원과 공유되지 않습니다).
+
+`supabase/migrations/`에 스키마(`20260713120000_initial_schema.sql`)와 RLS 정책(`20260713130000_rls_policies.sql`)이 준비되어 있습니다. Supabase 프로젝트 소유자가 SQL Editor에 순서대로 붙여넣어 실행(또는 `supabase db push`)해야 앱이 실제로 동작합니다. `scripts/seed_categories.py`는 `.env`에 `SUPABASE_SERVICE_ROLE_KEY`가 채워져 있으면 원티드 API에서 가져온 카테고리를 실제로 upsert합니다(없으면 기존처럼 dry-run).
 
 ## 브랜치 작업 시작 전 체크리스트
 
