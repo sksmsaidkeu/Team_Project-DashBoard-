@@ -4,6 +4,20 @@
 
 > 자세한 요구사항은 [`PRD.md`](./PRD.md), 데이터베이스 설계는 [`DB.md`](./DB.md), 디자인 시스템은 [`DESIGN.md`](./DESIGN.md)를 참고하세요. 이 문서는 전체를 요약한 개발 참고용 개요이자 현재 구현 현황을 정리한 문서입니다.
 
+## 다음 세션 체크리스트 — `company` → `main` push + PR 병합 (2026-07-15 예정)
+
+이 브랜치(`company`)에 로컬 커밋 `6095a3b`("Integrate common branch's main-tab dashboard, gate it to members, add signup promo")까지 반영되어 있고, **아직 `origin/company`에 push는 안 된 상태**입니다. 내일 아래 순서로 진행하세요.
+
+1. **push**: `git push origin company` (push 전 `git status`로 의도치 않은 변경이 없는지 한 번 더 확인)
+2. **`common` ← `company` 병합**: `common` 체크아웃 폴더에서 `git merge company` 실행. 아래 파일들은 충돌이 나지만 전부 **`company`(이 브랜치, 방금 만든 버전) 쪽을 그대로 채택**하면 된다 — 이미 common의 내용을 흡수해서 통합했기 때문에 판단이 필요 없는 기계적 작업입니다.
+   - `index.html`, `js/app.js`, `js/tab-main.js`, `js/categories.js`, `css/app.css`, `.env.example`, `PRD.md`
+   - `.gitignore`는 두 브랜치가 서로 다른 항목을 추가했을 뿐이라 자동 병합되거나, 안 되면 두 블록 다 유지
+   - `README.md`/`DB.md`/`css/components.css`/`css/tokens.css` 등 나머지는 자동 병합될 가능성이 높음(그래도 병합 후 diff는 한 번 훑어볼 것)
+3. **GitHub PR**: `company` → `main`(팀이 정한 target)으로 Pull Request 생성 후 리뷰·병합
+4. **주의사항**
+   - `js/config.js`는 이제 git에 없습니다 — 로컬에서 새로 체크아웃하는 사람은 `.env` 채운 뒤 `python scripts/generate_config.py` 실행해야 화면이 뜹니다("로컬 실행 방법" 절 참고).
+   - 실제 배포(Vercel) 전에는 `API_BASE_URL`을 실제 백엔드 호스팅 주소로 교체해야 합니다 — 로컬 기본값(`127.0.0.1:8000`)은 배포 환경에서 동작하지 않습니다.
+
 ## 회원 유형 및 가입 정책
 
 - 회원가입 시 `user_type`(`COMPANY` / `JOBSEEKER`)을 필수로 선택합니다.
@@ -55,7 +69,7 @@
 
 ## 화면 구조 (IA) 및 구현 현황
 
-- **메인**: 통합 검색, 추천 하이라이트, 채용 뉴스 — 미구현(계획 단계)
+- **메인**: 통합 검색, 채용 트렌드/스킬 수요 랭킹, 추천 하이라이트, 최근 공고/인재, 채용 뉴스 — **구현 완료**(2026-07-14, `common` 브랜치에서 이식). 회원가입 유도를 위해 **로그인 회원 전용**이며, 비로그인 방문자는 "시작" 탭에서 미리보기 홍보만 보고 "메인" 탭 진입 시엔 가입 유도 화면만 표시됩니다.
 - **Tab1 (기업용)**: 인재 검색, 공고 관리, 지원자 관리 — **구현 완료** (회원가입 ~ 서브탭 3종 전부)
 - **Tab2 (구직자용)**: 공고 열람, 기업 정보, 지원 현황 — 하드필터 기반 "추천 공고" 하이라이트 위젯만 구현됨. PRD가 요구하는 본 화면(공고 열람 전체 목록+필터, 기업 정보, 지원 현황)은 아직 미구현
 
@@ -81,10 +95,11 @@ Wanted API에는 업종/지역 전체 목록을 주는 엔드포인트가 없어
 
 ## 로컬 실행 방법
 
-1. **환경 변수**: 루트 `.env.example`과 `backend/.env.example`을 각각 복사해 `.env`/`backend/.env`로 만들고, Supabase URL/anon key/service_role key와 원티드 API `client-id`/`client-secret`을 채웁니다. `js/config.js`에도 동일한 `SUPABASE_URL`/`SUPABASE_ANON_KEY`/`API_BASE_URL`을 채워야 합니다(브라우저에서 직접 읽는 값이라 `.env`와 별개로 파일에 하드코딩되어 있습니다).
-2. **카테고리 시드** (최초 1회): `cd backend && python scripts/seed_categories.py`
-3. **백엔드 실행**: `cd backend && python -m venv .venv && .venv/Scripts/pip install -r requirements.txt && .venv/Scripts/python -m uvicorn app.main:app --host 127.0.0.1 --port 8000`
-4. **프런트엔드 실행**: 프로젝트 루트에서 `python -m http.server 5500` 후 `http://127.0.0.1:5500/index.html` 접속 (파일을 `file://`로 직접 열면 ES 모듈 CORS 문제로 동작하지 않습니다)
+1. **환경 변수**: 루트 `.env.example`과 `backend/.env.example`을 각각 복사해 `.env`/`backend/.env`로 만들고, Supabase URL/anon key/service_role key와 원티드 API `client_id`/`client_secret`을 채웁니다.
+2. **`js/config.js` 생성** (2026-07-14부터 git에 커밋하지 않음 — `.env`로부터 자동 생성): `python scripts/generate_config.py` 실행. (Vercel 등 Node 기반 빌드 환경에서는 대신 `node scripts/generate-config.mjs`를 빌드 커맨드로 사용)
+3. **카테고리 시드** (최초 1회): `cd backend && python scripts/seed_categories.py`
+4. **백엔드 실행**: `cd backend && python -m venv .venv && .venv/Scripts/pip install -r requirements.txt && .venv/Scripts/python -m uvicorn app.main:app --host 127.0.0.1 --port 8000`
+5. **프런트엔드 실행**: 프로젝트 루트에서 `python -m http.server 5500` 후 `http://127.0.0.1:5500/index.html` 접속 (파일을 `file://`로 직접 열면 ES 모듈 CORS 문제로 동작하지 않습니다)
 
 ## 추가 기능 (예정)
 
