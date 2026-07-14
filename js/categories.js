@@ -69,6 +69,19 @@ export async function fetchCategoriesByIds(ids) {
 }
 
 /**
+ * job_postings.position_category_id는 직군(depth 1)이므로(DB.md 3.8절),
+ * 구직자의 desired_position_category_id(직무, depth 2 가능)를 직군 레벨로 환산해 비교한다.
+ * js/matching.js의 매칭 파이프라인(공용화, common 브랜치 병합분)이 이 함수를 사용한다.
+ */
+export async function resolvePositionGroupId(categoryId) {
+  if (!categoryId) return null;
+  const category = await fetchCategoryById(categoryId);
+  if (!category) return null;
+  if (category.depth <= 1) return category.id;
+  return category.parent_id;
+}
+
+/**
  * 카테고리 leaf id로부터 최상위 조상까지의 경로를 [최상위, ..., leaf] 순서로 반환한다.
  * mountCascadeSelects의 initialValue(수정 모달 등에서 기존 선택값 복원)에 사용한다.
  */

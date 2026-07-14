@@ -1,7 +1,7 @@
 """채용공고(JobPosting) CRUD API (PRD 4.5절, DB.md 3.8/3.8.1절)."""
 
 from datetime import datetime, timezone
-from typing import List, Optional
+from typing import Dict, List, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -29,20 +29,29 @@ def _count_applicants(service, job_posting_id: str) -> int:
 
 
 def _count_applicants_batch(service, posting_ids: List[str]) -> dict:
-    """posting_id -> APPLY 로그 개수 매핑. N+1 쿼리를 피하기 위해 posting_ids를 한 번에 조회한다."""
+    """posting_id -> 지원자(actor_user_id 기준 중복 제거) 수 매핑. N+1 쿼리를 피하기 위해 posting_ids를 한 번에 조회한다.
+
+    동일 지원자가 같은 공고에 여러 번 APPLY 로그를 남길 수 있다(routers/applicants.py의
+    list_applicants도 동일 전제로 actor_user_id 기준 중복 제거를 한다). 여기서 로그 행 수를
+    그대로 세면 지원자 관리 패널의 실제 행 수와 이 카운트가 어긋나므로(버그, 2026-07-14 수정),
+    동일하게 actor_user_id 기준으로 중복 제거한 뒤 세야 한다.
+    """
     counts = {pid: 0 for pid in posting_ids}
     if not posting_ids:
         return counts
     resp = (
         service.table("interaction_logs")
-        .select("target_job_posting_id")
+        .select("target_job_posting_id, actor_user_id")
         .eq("action_type", "APPLY")
         .in_("target_job_posting_id", posting_ids)
         .execute()
     )
+    applicants_by_posting: Dict[str, set] = {}
     for row in resp.data or []:
         pid = row["target_job_posting_id"]
-        counts[pid] = counts.get(pid, 0) + 1
+        applicants_by_posting.setdefault(pid, set()).add(row["actor_user_id"])
+    for pid, actor_ids in applicants_by_posting.items():
+        counts[pid] = len(actor_ids)
     return counts
 
 

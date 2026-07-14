@@ -127,15 +127,19 @@ def mark_applicant_viewed(
     if not profile:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="지원자를 찾을 수 없습니다.")
 
-    apply_check = maybe_single_data(
+    # list_applicants와 동일하게 동일 지원자가 같은 공고에 여러 번 APPLY 로그를 남길 수 있다.
+    # maybe_single()은 행이 2건 이상이면 예외를 던지므로(버그, 2026-07-14 수정), 존재 여부만
+    # 확인하면 되는 이 조회는 limit(1)로 바꿔 중복 APPLY 로그가 있어도 500이 나지 않게 한다.
+    apply_logs_resp = (
         service.table("interaction_logs")
         .select("id")
         .eq("action_type", "APPLY")
         .eq("target_job_posting_id", job_posting_id)
         .eq("actor_user_id", profile["user_id"])
-        .maybe_single()
+        .limit(1)
+        .execute()
     )
-    if not apply_check:
+    if not apply_logs_resp.data:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="해당 공고에 지원한 이력이 없습니다.")
 
     try:

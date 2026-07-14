@@ -17,7 +17,10 @@ app = FastAPI(title="채용 플랫폼 - 기업(Tab1) 백엔드 API", version="0.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list,
-    allow_credentials=True,
+    # 인증은 Authorization: Bearer <token> 헤더로만 이뤄지고 쿠키를 쓰지 않으므로
+    # allow_credentials=True가 필요 없다. CORS_ORIGINS="*"와 allow_credentials=True를
+    # 동시에 쓰는 건 스펙 위반(브라우저가 이 조합을 거부)이라 False로 수정(2026-07-14).
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
