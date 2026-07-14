@@ -1,0 +1,119 @@
+# 채용 플랫폼
+
+카테고리 기반 매칭을 핵심으로 하는 채용 플랫폼입니다. 기업과 구직자가 자유 텍스트가 아닌 사전 정의된 카테고리 체계를 통해 정보를 등록하고, 이를 기반으로 추천/매칭이 이루어집니다.
+
+> 자세한 요구사항은 [`PRD.md`](./PRD.md)를 참고하세요. 이 문서는 PRD를 요약한 개발 참고용 개요입니다.
+
+## 로컬 실행 방법
+
+**`index.html`을 더블클릭해서 직접 열지 마세요.** `js/app.js`가 `<script type="module">`이라, `file://` 경로로 열면 브라우저 CORS 정책 때문에 스크립트 자체가 로드되지 않아 탭 전환/로그인/회원가입 등 모든 기능이 조용히 먹통이 됩니다(파일을 열면 이를 알려주는 빨간 배너가 뜹니다).
+
+로컬 HTTP 서버로 띄운 뒤 그 주소로 접속하세요. 예:
+
+```bash
+python -m http.server 8000
+# 이후 브라우저에서 http://localhost:8000/index.html 접속
+```
+
+(VS Code의 Live Server 확장, `npx serve` 등 다른 정적 서버도 동일하게 사용 가능합니다.)
+
+## 회원 유형 및 가입 정책
+
+- 회원가입 시 `user_type`(`COMPANY` / `JOBSEEKER`)을 필수로 선택합니다.
+- 유형에 따라 가입 폼, 필수 입력값, 온보딩 플로우가 완전히 분기됩니다.
+- 역할 전환은 불가하며, 계정당 1개 역할만 가집니다.
+
+## 카테고리 체계
+
+모든 데이터(업종, 직무, 스킬, 지역, 고용형태)는 자유 텍스트가 아닌 사전 정의된 **Category ID** 기반으로 저장·검색·매칭됩니다. 카테고리는 계층형(parent-child) 구조를 가집니다.
+
+| 코드 | 설명 |
+|---|---|
+| `INDUSTRY` | 업종 |
+| `JOB` | 직무 |
+| `SKILL` | 스킬 |
+| `REGION` | 지역 |
+| `EMPLOYMENT_TYPE` | 고용형태 |
+
+## 주요 데이터 모델
+
+- **CompanyProfile** — 업종, 기업 규모, 위치, 직무 카테고리, 고용형태, 필요 스킬(다중), 연봉 범위
+- **JobSeekerProfile** — 희망 직무, 경력 연차, 거주 지역, 보유 스킬(다중), 희망 연봉, 희망 근무형태
+- **UserPreference** — 선호 카테고리 + 가중치
+- **InteractionLog** — 조회 / 저장 / 지원 로그
+
+## 추천/매칭 로직
+
+`UserPreference`와 `InteractionLog`를 입력으로 다음 3단계를 거쳐 추천 결과를 산출합니다.
+
+1. **하드 필터**: 필수 조건 불일치 항목 제외
+2. **소프트 스코어링**: 아래 가중치로 점수 계산
+3. **정렬**: 점수순 정렬 후 상위 노출
+
+### 스코어링 가중치
+
+| 항목 | 가중치 |
+|---|---|
+| 스킬 | 40% |
+| 직무 | 25% |
+| 지역·연봉 | 15% |
+| 활동성 | 10% |
+| 최신성 | 10% |
+
+추천/매칭 기능은 카테고리 체계 및 스코어링 로직을 화면과 무관하게 공통으로 사용합니다.
+
+### 공용 매칭 헬퍼 (`js/matching.js`, `js/categories.js`)
+
+`common` 브랜치가 하드 필터 매칭 쿼리를 아래 공용 함수로 추출했습니다(REFACT.md P0-1/P0-2). `company`/`jobseeker` 브랜치에서 `js/tab-company.js`/`js/tab-jobseeker.js`를 재설계할 때 이 함수들을 가져다 쓸 수 있습니다(채택 여부/시점은 각 담당자 재량).
+
+- `fetchMatchingJobseekers(company, limit)` — `js/matching.js`. 기업 -> 구직자 하드 필터 매칭. `company`는 `company_profiles` 행(`id`/`position_category_id`/`region_category_id` 사용). `limit`으로 반환 건수 조절(기업 탭은 전체 목록, 메인 탭은 하이라이트 N개). 반환: `{ candidates, categoryMap }`.
+- `fetchMatchingPostings(jobseeker, limit)` — `js/matching.js`. 구직자 -> 공고 하드 필터 매칭. `jobseeker`는 `jobseeker_profiles` 행(`id`/`desired_position_category_id`/`desired_employment_type`/`region_category_id` 사용). 반환: `{ postings, categoryMap, companyMap }`.
+- `resolvePositionGroupId(categoryId)` — `js/categories.js`. `job_postings.position_category_id`(직군, depth 1)와 구직자의 `desired_position_category_id`(직무, depth 2 가능)를 비교하기 위해 직군 레벨로 환산한다.
+
+매칭 규칙(하드 필터 조건) 자체가 바뀔 때는 이 파일들만 고치면 되도록 설계되어 있습니다.
+
+## 화면 구조 (IA)
+
+- **메인**: 통합 검색, 추천 하이라이트
+- **Tab1 (기업용)**: 인재 검색, 공고 관리, 지원자 관리
+- **Tab2 (구직자용)**: 공고 열람, 기업 정보, 지원 현황
+
+## 추가 기능 (예정)
+
+### 채용 시장 분석 (P1 · v1.1)
+
+같은 업종 내 최근 채용 트렌드를 분석하는 기능입니다.
+
+- 직무별 채용 수 추이 (월별 그래프)
+- 평균 연봉 / 경험 연차 (집계 데이터)
+- 경쟁사 채용 트렌드 (익명 상위 3사)
+
+필요 데이터: `InteractionLog`(채용공고 게시/마감), `Category`(업종, 직무), `Salary Range`(연봉 집계). 자세한 내용은 [`PRD.md`](./PRD.md) 7장을 참고하세요.
+
+## 미확정 이슈
+
+역할 전환 정책, 가중치 자동학습 포함 여부, 카테고리 depth 제한, 민감정보(연봉/지역) 비공개 옵션 등 아직 확정되지 않은 이슈가 있으며, 구현 시 임시값으로 처리됩니다. 자세한 내용과 임시 처리 방안은 [`PRD.md`](./PRD.md) 8장을 참고하세요.
+
+## 로컬 환경설정 (Supabase 자격증명)
+
+이 프로젝트는 빌드 도구가 없는 정적 SPA라 `.env`를 브라우저가 직접 읽을 수 없습니다. `.env`에 `SUPABASE_URL`/`SUPABASE_ANON_KEY`(및 선택적으로 `NEWS_API_KEY`)를 채운 뒤 `python scripts/generate_config.py`를 실행하면 `js/config.js`가 자동 갱신됩니다.
+
+> **이 저장소는 public입니다.** `js/config.js`는 실제 키 값이 그대로 들어가는 생성 파일이라 `.gitignore`에 등록되어 있으며, 각자 로컬에서 위 명령으로 직접 생성해야 합니다(커밋되지 않으므로 다른 브랜치/팀원과 공유되지 않습니다).
+
+`supabase/migrations/`에 스키마(`20260713120000_initial_schema.sql`)와 RLS 정책(`20260713130000_rls_policies.sql`)이 준비되어 있습니다. Supabase 프로젝트 소유자가 SQL Editor에 순서대로 붙여넣어 실행(또는 `supabase db push`)해야 앱이 실제로 동작합니다. `scripts/seed_categories.py`는 `.env`에 `SUPABASE_SERVICE_ROLE_KEY`가 채워져 있으면 원티드 API에서 가져온 카테고리를 실제로 upsert합니다(없으면 기존처럼 dry-run).
+
+## 브랜치 작업 시작 전 체크리스트
+
+`common`/`company`/`jobseeker` 각 브랜치에서 기능 구현을 시작하기 전에, 아래를 먼저 확인하세요.
+
+1. 원티드(Wanted) API(`openapi.json`, `openapi (1).json`)에서 실제로 가져오는 변수명·타입·구조가 `PRD.md`(3장 카테고리 체계, 4장 데이터 모델, 4.5장 JobPosting)에 적힌 것과 **동일한지** 다시 확인합니다. PRD.md의 변수명은 원티드 API와 통일하는 것을 원칙으로 작성되어 있지만, 실제 API 응답(필드 유무, enum 값, nullable 여부 등)이 문서 작성 시점과 달라졌을 수 있습니다.
+2. 차이가 발견되면, 코드부터 구현하지 말고 **`PRD.md`/`DB.md`를 먼저 갱신**한 뒤 구현을 시작합니다 — 두 문서가 실제 API와 어긋난 상태로 구현이 진행되면 이후 다른 브랜치와의 merge 시 데이터 모델 불일치가 발생합니다.
+3. 특히 `EMPLOYMENT_TYPE`(고용형태, flat 문자열), `average_salary`/`hired_salary`(공고가 아닌 기업 단위 집계), `position_category_id`+직무 상세(복수) 구조처럼 이번에 원티드 API에 맞춰 재설계된 부분은 실제 연동 시 어긋나기 쉬우니 우선적으로 재검증하세요.
+4. **`company`/`jobseeker` 브랜치 담당자만 해당**: `js/tab-company.js`/`js/tab-jobseeker.js`는 초기 스캐폴드 단계에서 만들어진 **임시 프리뷰 구현**입니다(하드 필터 기반 인재/공고 매칭 카드만 보여줌 — Tab1/Tab2의 정식 기능인 공고 관리·지원자 관리·기업 정보·지원 현황 등은 아직 없음). 각자 브랜치에서 자유롭게 재설계/교체해도 됩니다. 두 파일에 남아 있는 매칭 쿼리 로직은 이제 `js/matching.js`의 `fetchMatchingJobseekers`/`fetchMatchingPostings`(위 "공용 매칭 헬퍼" 절 참고)로 공용 추출되어 있으니, 재설계 시 이 함수를 그대로 쓸지 여부를 `common` 브랜치 담당자와 조율하세요.
+
+## 기술 스택 (예정)
+
+- **프론트엔드**: HTML/CSS/JavaScript 기반 단일 페이지 웹앱(SPA)
+- **백엔드**: Supabase (Postgres, Edge Functions, RLS)
+
+현재 저장소에는 `openapi.json` 등 API 명세 초안이 참고용으로 포함되어 있으며, 아직 구현 코드는 존재하지 않는 초기 단계입니다.
