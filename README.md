@@ -6,17 +6,29 @@
 
 ## 다음 세션 체크리스트 — `company` → `main` push + PR 병합 (2026-07-15 예정)
 
-이 브랜치(`company`)에 로컬 커밋 `6095a3b`("Integrate common branch's main-tab dashboard, gate it to members, add signup promo")까지 반영되어 있고, **아직 `origin/company`에 push는 안 된 상태**입니다. 내일 아래 순서로 진행하세요.
+이 브랜치(`company`)에 로컬 커밋 `6095a3b`("Integrate common branch's main-tab dashboard, gate it to members, add signup promo")까지 반영되어 있고, **아직 `origin/company`에 push는 안 된 상태**입니다. 최종 병합 토폴로지는 **`company` → `main` 직접 PR**로 확정했습니다(`common`은 이번 PR에 관여하지 않습니다 — 4번 참고). 내일 아래 순서로 진행하세요.
 
-1. **push**: `git push origin company` (push 전 `git status`로 의도치 않은 변경이 없는지 한 번 더 확인)
-2. **`common` ← `company` 병합**: `common` 체크아웃 폴더에서 `git merge company` 실행. 아래 파일들은 충돌이 나지만 전부 **`company`(이 브랜치, 방금 만든 버전) 쪽을 그대로 채택**하면 된다 — 이미 common의 내용을 흡수해서 통합했기 때문에 판단이 필요 없는 기계적 작업입니다.
-   - `index.html`, `js/app.js`, `js/tab-main.js`, `js/categories.js`, `css/app.css`, `.env.example`, `PRD.md`
-   - `.gitignore`는 두 브랜치가 서로 다른 항목을 추가했을 뿐이라 자동 병합되거나, 안 되면 두 블록 다 유지
-   - `README.md`/`DB.md`/`css/components.css`/`css/tokens.css` 등 나머지는 자동 병합될 가능성이 높음(그래도 병합 후 diff는 한 번 훑어볼 것)
-3. **GitHub PR**: `company` → `main`(팀이 정한 target)으로 Pull Request 생성 후 리뷰·병합
-4. **주의사항**
+> **업데이트 (2026-07-15, 같은 날 추가 반영)**: 이 체크리스트를 쓴 뒤 사용자 피드백을 2차·3차에 걸쳐 받아 메인 탭에 수정을 더 반영했습니다 — 아래 "메인 탭 2·3차 수정 요약" 절 참고. 이 커밋들도 이번 push/PR 대상에 포함됩니다.
+
+1. **`company` push**: `git push origin company` (push 전 `git status`로 의도치 않은 변경이 없는지 한 번 더 확인)
+2. **`common` push** (별도 로컬 폴더 `Team_Project_common`에서): `git push origin common`. 이 브랜치는 로컬 커밋 `1f4eaae`까지 origin보다 3개 앞서 있고 아직 push가 안 됐습니다(리팩터 `a0f7304`, New.html 리디자인 `ad6433b`, company 병합 대비 준비 `1f4eaae`) — `company`가 이미 이 최신 상태를 흡수했으므로(아래 참고) 원격도 최신으로 맞춰 둡니다. **이번 PR 자체에는 관여하지 않지만**, `jobseeker` 브랜치가 계속 `common`을 기준으로 작업하므로 push해서 최신 상태를 공유합니다.
+3. **GitHub PR**: `company` → `main`으로 Pull Request 생성. **충돌 없음 확인됨** — `git merge-tree --write-tree --name-only company origin/main`으로 작업 디렉터리를 건드리지 않고 시뮬레이션한 결과 충돌 0건입니다(`main`에는 `.github/` 템플릿 커밋들만 있고, 이미 `company`의 조상 커밋이라 순수하게 얹히는 병합입니다).
+4. **`common`은 이번에 `main`으로 병합하지 않습니다** — `company`가 `common`의 메인탭 작업을 이미 통째로 흡수했으므로, `common` → `main` PR은 별도로 만들지 않기로 결정했습니다(2026-07-15). `common`은 계속 `jobseeker` 브랜치가 이어받는 공유 기준 브랜치로 남습니다. 나중에 `common`을 `company`/`main`과 다시 맞출 일이 생기면(예: `jobseeker` 결과물을 올릴 때), `MERGE.md`에 현재 시점 기준 충돌 7개 파일과 해결 방법이 정리되어 있으니 참고하세요.
+5. **주의사항**
    - `js/config.js`는 이제 git에 없습니다 — 로컬에서 새로 체크아웃하는 사람은 `.env` 채운 뒤 `python scripts/generate_config.py` 실행해야 화면이 뜹니다("로컬 실행 방법" 절 참고).
    - 실제 배포(Vercel) 전에는 `API_BASE_URL`을 실제 백엔드 호스팅 주소로 교체해야 합니다 — 로컬 기본값(`127.0.0.1:8000`)은 배포 환경에서 동작하지 않습니다.
+
+### 메인 탭 2·3차 수정 요약 (2026-07-15)
+
+`6095a3b` 커밋으로 `common`의 메인탭을 이식한 뒤, 같은 날 사용자 확인을 거쳐 아래를 추가로 고쳤습니다(모두 `js/tab-main.js`/`index.html`/`css/app.css` 범위).
+
+1. **역할 선택 CTA 제거** — 메인 탭 상단의 "기업으로 시작하기"/"구직자로 시작하기" 카드를 삭제했습니다. `data-role-cta` 속성에 연결된 JS 핸들러가 애초에 없어 클릭해도 아무 동작을 하지 않던 죽은 UI였습니다.
+2. **시장 데이터 4종을 2x2 그리드로 정렬** — 채용 트렌드 / 실시간 채용 시장 동향(원티드) / 스킬 수요 랭킹 / 스킬 조합 분석을 한 화면에서 비교할 수 있도록 `index.html`의 `.section-group__grid`(2열, 900px 이하에서 1열)로 묶었습니다. 이 과정에서 "실시간 채용 시장 동향"도 기존 막대(bar) 형태에서 다른 3개와 동일한 `renderPieChart` 파이차트로 통일했습니다(`renderRankBars`/`.rank-bar*`는 더 이상 쓰이지 않아 제거).
+3. **파이차트 정렬 버그 수정** — `.pie-chart`가 `align-items: center`였는데, 범례가 8개 항목(증감률 텍스트까지 포함)이라 파이 원(고정 160px)보다 길어지면 원이 세로 중앙으로 밀려 헤딩 바로 아래에서 시작하지 못하고 위쪽에 빈 공간이 생겼습니다 — `align-items: flex-start`로 고쳐 4칸 모두 헤딩과 나란히 시작하도록 정렬했습니다.
+4. **히어로 검색 지역 필터 버그 수정** — `#hero-search-region` select는 시도(REGION depth 1)만 나열하는데, 실제 `company_profiles.region_category_id`는 시군구(depth 2, 없으면 시도)가 들어갑니다(`backend/scripts/import_wanted_data.py`의 `_ensure_region_for_company` 참고). 그래서 지역을 선택해 검색하면 시군구가 채워진 대다수 기업을 놓쳐 결과가 항상 텅 비어 보였습니다. `js/tab-main.js`의 `resolveRegionFilterIds()`가 선택한 시도 id + 하위 시군구 + 그 하위 읍면동 id를 모두 모아 `in` 매칭하도록 고쳤습니다.
+5. **(코드 버그 아님, 참고)** 기업 탭 "인재 검색"에서 뜨는 "서버에 연결할 수 없습니다. 백엔드 서버가 실행 중인지 확인해주세요"는 `backend/`(FastAPI)가 로컬에 떠 있지 않아서 나는 정상 에러 메시지입니다 — "로컬 실행 방법" 4번 커맨드로 백엔드를 띄우면 정상 동작합니다.
+
+**⚠️ jobseeker 병합 시 주의 — 아직 못 고친 동일 계열 버그**: 위 4번과 같은 "REGION 카테고리 depth 불일치" 문제가 `js/matching.js`의 `fetchMatchingPostings`/`fetchMatchingJobseekers`(하드 필터 매칭, `region_category_id` 완전일치 `.eq()`/`===` 비교)와, 아직 리팩터되지 않은 `js/tab-company.js`/`js/tab-jobseeker.js`의 자체 매칭 쿼리에도 그대로 남아 있습니다. 회원가입 시 지역은 3단계 캐스케이드 select(`js/signup.js`, `maxDepth: 3`)로 시군구/읍면동까지 깊게 선택되는 경우가 많아, 기업 쪽 depth(주로 depth 1~2)와 완전히 다른 depth가 되어 하드 필터가 실제로는 거의 안 걸리는(항상 매치 실패) 상태일 수 있습니다. `jobseeker` 탭의 실제 추천/매칭 화면을 구현할 때는 이 문제를 함께 고려하고, 고칠 경우 `js/tab-main.js`의 `resolveRegionFilterIds()`(시도 id → 하위 시군구/읍면동까지 확장해 `in` 매칭) 패턴을 그대로 가져다 쓰는 걸 권장합니다.
 
 ## 회원 유형 및 가입 정책
 
@@ -69,7 +81,7 @@
 
 ## 화면 구조 (IA) 및 구현 현황
 
-- **메인**: 통합 검색, 채용 트렌드/스킬 수요 랭킹, 추천 하이라이트, 최근 공고/인재, 채용 뉴스 — **구현 완료**(2026-07-14, `common` 브랜치에서 이식). 회원가입 유도를 위해 **로그인 회원 전용**이며, 비로그인 방문자는 "시작" 탭에서 미리보기 홍보만 보고 "메인" 탭 진입 시엔 가입 유도 화면만 표시됩니다.
+- **메인**: 통합 검색, 시장 데이터 4종(채용 트렌드/실시간 채용 시장 동향/스킬 수요 랭킹/스킬 조합 — 2x2 그리드, 전부 파이차트), 추천 하이라이트, 최근 공고/인재, 채용 뉴스 — **구현 완료**(2026-07-14, `common` 브랜치에서 이식 + 2026-07-15 2·3차 수정, "메인 탭 2·3차 수정 요약" 절 참고). 회원가입 유도를 위해 **로그인 회원 전용**이며, 비로그인 방문자는 "시작" 탭에서 미리보기 홍보만 보고 "메인" 탭 진입 시엔 가입 유도 화면만 표시됩니다.
 - **Tab1 (기업용)**: 인재 검색, 공고 관리, 지원자 관리 — **구현 완료** (회원가입 ~ 서브탭 3종 전부)
 - **Tab2 (구직자용)**: 공고 열람, 기업 정보, 지원 현황 — 하드필터 기반 "추천 공고" 하이라이트 위젯만 구현됨. PRD가 요구하는 본 화면(공고 열람 전체 목록+필터, 기업 정보, 지원 현황)은 아직 미구현
 

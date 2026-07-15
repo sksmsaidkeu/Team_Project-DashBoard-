@@ -260,50 +260,43 @@
         </form>
       </section>
 
-      <!-- 역할 선택 CTA: 메인에서 탭1(기업)/탭2(구직자) 가입 흐름으로 바로 진입 -->
-      <section class="main-section" id="main-role-cta">
-        <div class="role-cta-grid">
-          <button type="button" class="card role-cta-card" data-role-cta="COMPANY">
-            <h3 class="card__title">기업으로 시작하기</h3>
-            <p class="card__meta">인재를 검색하고 공고를 관리하세요</p>
-          </button>
-          <button type="button" class="card role-cta-card" data-role-cta="JOBSEEKER">
-            <h3 class="card__title">구직자로 시작하기</h3>
-            <p class="card__meta">맞춤 공고를 받아보고 지원하세요</p>
-          </button>
-        </div>
-      </section>
-
       <!-- Group B: 시장 인사이트 컨테이너 (DESIGN.md 4.1절 그룹핑 원칙).
-           자체 채용 트렌드 + 원티드 실시간 동향 + 스킬 랭킹/조합, 3개 섹션 모두 "시장 통계" 성격이라
-           하나의 시각적 컨테이너(배경 wash + 보더)로 묶고 상단에 오버라인 라벨을 얹는다.
+           자체 채용 트렌드 + 원티드 실시간 동향 + 스킬 랭킹 + 스킬 조합, 4개 섹션 모두 파이차트이자
+           "시장 통계" 성격이라 하나의 시각적 컨테이너(배경 wash + 보더)로 묶고, 내부는 2x2 그리드로
+           배치해 한 화면에서 바로 비교할 수 있게 한다(2차 수정, 2026-07-15).
            정보량/순서/각 섹션의 출처 라벨("우리 플랫폼 기준" / "원티드 제공")은 그대로 유지 —
            묶는 것은 시각적 그룹핑뿐, 데이터 출처 구분은 지운 게 아니다(편향/데이터 왜곡 방지). -->
       <section class="section-group" aria-label="시장 데이터 섹션 그룹">
         <p class="section-group__overline" aria-hidden="true">시장 데이터</p>
 
-        <!-- 채용 트렌드 (다른 에이전트가 내용을 채울 빈 컨테이너). 아래 "실시간 채용 시장 동향"(원티드 실제 공고 데이터)과
-             출처가 다르므로 헤딩에 구분 문구를 병기한다. -->
-        <div class="section-group__item">
-          <h2 class="text-h2" id="main-trend-heading">채용 트렌드 <span class="card__meta">(우리 플랫폼 기준)</span></h2>
-          <div id="main-trend" aria-labelledby="main-trend-heading"></div>
-        </div>
+        <div class="section-group__grid">
+          <!-- 채용 트렌드 (다른 에이전트가 내용을 채울 빈 컨테이너). 아래 "실시간 채용 시장 동향"(원티드 실제 공고 데이터)과
+               출처가 다르므로 헤딩에 구분 문구를 병기한다. -->
+          <div class="section-group__item">
+            <h2 class="text-h2" id="main-trend-heading">채용 트렌드 <span class="card__meta">(우리 플랫폼 기준)</span></h2>
+            <div id="main-trend" aria-labelledby="main-trend-heading"></div>
+          </div>
 
-        <!-- 실시간 채용 시장 동향: 원티드 API의 실제 라이브 공고 데이터 기준(다른 에이전트가 내용을 채울 빈 컨테이너).
-             위 "채용 트렌드"(우리 플랫폼 job_postings 기준)와는 별개의 데이터 출처다. -->
-        <div class="section-group__item">
-          <h2 class="text-h2" id="main-wanted-trend-heading">실시간 채용 시장 동향 (원티드 제공)</h2>
-          <p class="card__meta">원티드에 게시된 실제 공고 데이터를 기반으로 집계됩니다.</p>
-          <div id="main-wanted-trend" aria-labelledby="main-wanted-trend-heading"></div>
-        </div>
+          <!-- 실시간 채용 시장 동향: 원티드 API의 실제 라이브 공고 데이터 기준(다른 에이전트가 내용을 채울 빈 컨테이너).
+               위 "채용 트렌드"(우리 플랫폼 job_postings 기준)와는 별개의 데이터 출처다. -->
+          <div class="section-group__item">
+            <h2 class="text-h2" id="main-wanted-trend-heading">실시간 채용 시장 동향 (원티드 제공)</h2>
+            <p class="card__meta">원티드에 게시된 실제 공고 데이터를 기반으로 집계됩니다.</p>
+            <div id="main-wanted-trend" aria-labelledby="main-wanted-trend-heading"></div>
+          </div>
 
-        <!-- 스킬 수요 랭킹 & 조합 분석 (다른 에이전트가 내용을 채울 빈 컨테이너) -->
-        <div class="section-group__item">
-          <h2 class="text-h2" id="main-skill-heading">스킬 수요 랭킹 & 조합 분석</h2>
-          <h3 class="text-h3">인기 스킬 랭킹</h3>
-          <div id="main-skill-ranking" aria-labelledby="main-skill-heading"></div>
-          <h3 class="text-h3">자주 함께 요구되는 스킬 조합</h3>
-          <div id="main-skill-combo"></div>
+          <!-- 스킬 수요 랭킹 (다른 에이전트가 내용을 채울 빈 컨테이너). 2x2 그리드에서 독립 셀로 보이도록
+               기존 "스킬 수요 랭킹 & 조합 분석" 상위 헤딩을 셀별 h2로 분리했다(2차 수정, 2026-07-15). -->
+          <div class="section-group__item">
+            <h2 class="text-h2" id="main-skill-ranking-heading">인기 스킬 랭킹</h2>
+            <div id="main-skill-ranking" aria-labelledby="main-skill-ranking-heading"></div>
+          </div>
+
+          <!-- 스킬 조합 분석 (다른 에이전트가 내용을 채울 빈 컨테이너) -->
+          <div class="section-group__item">
+            <h2 class="text-h2" id="main-skill-combo-heading">자주 함께 요구되는 스킬 조합</h2>
+            <div id="main-skill-combo" aria-labelledby="main-skill-combo-heading"></div>
+          </div>
         </div>
       </section>
 
