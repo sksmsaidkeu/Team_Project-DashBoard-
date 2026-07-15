@@ -132,7 +132,15 @@ export async function renderTalentsPanel(container) {
   const salaryMaxInput = container.querySelector('#talent-salary-max');
   const sortScoreCheckbox = container.querySelector('#talent-sort-score');
 
+  // 스킬 체크박스는 클릭마다 즉시 search()를 호출한다(디바운스 없음) — 백엔드가 콜드 스타트
+  // 등으로 요청마다 응답 속도가 들쭉날쭉하면, 먼저 보낸(느린) 요청의 응답이 나중에 보낸(빠른)
+  // 요청의 응답보다 늦게 도착해 화면을 덮어써버릴 수 있다. 사용자 입장에서는 "방금 고른 스킬이
+  // 반영 안 되고 이전 상태로 되돌아간다/버튼이 안 눌리는 것 같다"로 보인다. 요청마다 일련번호를
+  // 매겨, 가장 마지막에 보낸 요청의 응답만 반영하도록 막는다(오래된 응답은 조용히 버림).
+  let searchSeq = 0;
+
   async function search() {
+    const mySeq = ++searchSeq;
     resultArea.innerHTML = '<p class="empty-state">검색 중입니다...</p>';
     const skillIds = skillsApi.getValue();
     const query = {
@@ -150,8 +158,10 @@ export async function renderTalentsPanel(container) {
 
     try {
       const results = await apiClient.get('/company/talent-search', query);
+      if (mySeq !== searchSeq) return; // 그 사이 더 최신 검색이 시작됐으면 이 결과는 버린다
       await renderResults(results || []);
     } catch (err) {
+      if (mySeq !== searchSeq) return;
       resultArea.innerHTML = `<p class="empty-state">${errMsg(err)}</p>`;
     }
   }
