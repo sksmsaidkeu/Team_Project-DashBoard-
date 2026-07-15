@@ -520,10 +520,14 @@
    아래부터는 common 브랜치의 '메인' 탭 대시보드 이식분(hero-search ~ rank-bar 등).출처: Team_Project_common css/app.css 243~508행.
    ==================================================================== */
 /* 메인 탭(#panel-main)의 히어로 검색 섹션 wash 배경 (DESIGN.md 4.1절).
-   #panel-start의 랜딩 히어로(.hero, 위 76행)와 클래스명이 같아 #panel-main으로 스코프해 분리한다 —
-   스코프 없이 같은 .hero 셀렉터를 또 정의하면 소스 순서상 나중 규칙이 이겨 랜딩 히어로의
-   grid 레이아웃(두 컬럼)이 깨진다. */
+   #panel-start의 랜딩 히어로(.hero, 위 98행)와 클래스명이 같아 #panel-main으로 스코프해 분리한다.
+   스코프만으로는 부족하다 — CSS 캐스케이드는 프로퍼티 단위로 적용되므로, 여기서 안 건드리는
+   프로퍼티(display/grid-template-columns/gap/align-items/border)는 특이도가 낮은 bare .hero
+   규칙 값이 그대로 새어 들어온다. 그래서 겹치는 프로퍼티를 전부 명시적으로 리셋해야
+   랜딩 히어로의 2열 grid 레이아웃이 여기 새어 들어오지 않는다. */
 #panel-main .hero {
+  display: block;
+  border: none;
   background: var(--pink-tint-50);
   border-radius: var(--radius-lg);
   padding: var(--space-16) var(--space-6);

@@ -202,3 +202,63 @@ export async function mountSkillCheckboxes({ container, onChange }) {
     getValue: () => Array.from(selected),
   };
 }
+
+/**
+ * 특정 부모 카테고리(예: JOB 직군, depth 1)의 자식 카테고리(직무 상세, depth 2)를
+ * 다중 선택 체크박스 그룹으로 렌더링한다. 채용공고의 `position_detail_category_ids`
+ * (DB.md 3.8.1절 job_posting_position_details) 입력에 사용한다.
+ *
+ * @param {string[]} [initialSelectedIds] 기존에 선택되어 있던 하위 카테고리 id 목록(수정 모달용)
+ */
+export async function mountCategoryCheckboxesByParent({ container, parentId, initialSelectedIds = [], onChange }) {
+  container.innerHTML = '';
+
+  if (!parentId) {
+    container.innerHTML = '<p class="empty-state">상위 카테고리를 먼저 선택해주세요.</p>';
+    return { getValue: () => [] };
+  }
+
+  const rows = await fetchChildCategories(parentId);
+  const selected = new Set(initialSelectedIds);
+
+  if (rows.length === 0) {
+    container.innerHTML = '<p class="empty-state">하위 카테고리가 없습니다.</p>';
+    return { getValue: () => [] };
+  }
+
+  rows.forEach((row) => {
+    const inputId = `detail-${row.id}`;
+    const wrapper = document.createElement('label');
+    wrapper.className = 'tag tag--checkbox';
+    wrapper.setAttribute('for', inputId);
+
+    const input = document.createElement('input');
+    input.type = 'checkbox';
+    input.id = inputId;
+    input.value = row.id;
+    input.className = 'sr-only-checkbox';
+
+    if (selected.has(row.id)) {
+      input.checked = true;
+      wrapper.classList.add('tag--checked');
+    }
+
+    input.addEventListener('change', () => {
+      if (input.checked) {
+        selected.add(row.id);
+      } else {
+        selected.delete(row.id);
+      }
+      wrapper.classList.toggle('tag--checked', input.checked);
+      onChange?.(Array.from(selected));
+    });
+
+    wrapper.appendChild(input);
+    wrapper.append(row.title);
+    container.appendChild(wrapper);
+  });
+
+  return {
+    getValue: () => Array.from(selected),
+  };
+}
