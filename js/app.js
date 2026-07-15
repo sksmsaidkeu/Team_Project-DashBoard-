@@ -1,5 +1,5 @@
 import { supabase } from './supabaseClient.js';
-import { getSession, loginWithPassword, logout } from './auth.js';
+import { getSession, getCurrentUserProfile, loginWithPassword, logout } from './auth.js';
 import { initSignup } from './signup.js';
 import { renderCompanyHighlight } from './tab-company.js';
 import { renderJobseekerDashboard } from './jobseeker-dashboard.js';
@@ -12,7 +12,7 @@ const panels = {
   signup: document.getElementById('panel-signup'),
 };
 const authBar = document.getElementById('auth-bar');
-const signupEntryBtn = document.getElementById('signup-entry-btn');
+const companyHighlightEl = document.getElementById('company-highlight');
 
 function setActiveTab(tabName) {
   tabButtons.forEach((btn) => {
@@ -25,7 +25,7 @@ function setActiveTab(tabName) {
   });
 
   if (tabName === 'company') {
-    renderCompanyHighlight(document.getElementById('company-highlight'));
+    renderCompanyHighlight(companyHighlightEl);
   }
   if (tabName === 'jobseeker') {
     renderJobseekerDashboard();
@@ -41,7 +41,7 @@ document.querySelector('.logo')?.addEventListener('click', (e) => {
   setActiveTab('main');
 });
 
-signupEntryBtn?.addEventListener('click', () => setActiveTab('signup'));
+document.getElementById('signup-entry-btn')?.addEventListener('click', () => setActiveTab('signup'));
 
 function renderAuthBar(session) {
   if (!session) {
@@ -62,6 +62,7 @@ function renderAuthBar(session) {
       const { error } = await loginWithPassword(email, password);
       if (error) {
         window.alert(`로그인에 실패했습니다: ${error.message}`);
+        return;
       }
     });
     return;
@@ -76,7 +77,7 @@ function renderAuthBar(session) {
 
 function refreshActiveTabContent() {
   const activeTab = document.querySelector('.tab[aria-selected="true"]')?.dataset.tab;
-  if (activeTab === 'company') renderCompanyHighlight(document.getElementById('company-highlight'));
+  if (activeTab === 'company') renderCompanyHighlight(companyHighlightEl);
   if (activeTab === 'jobseeker') renderJobseekerDashboard();
 }
 
@@ -86,8 +87,13 @@ initSignup({
   },
 });
 
+let isInitialAuthEvent = true;
 supabase.auth.onAuthStateChange((_event, session) => {
   renderAuthBar(session);
+  if (isInitialAuthEvent) {
+    isInitialAuthEvent = false;
+    return;
+  }
   refreshActiveTabContent();
 });
 
