@@ -1,20 +1,29 @@
 """
 scripts/seed_categories.py
 
-categories 테이블 시드 스크립트. company 브랜치(backend/scripts/seed_categories.py)의 로직을
-이 브랜치 관례(표준 라이브러리만 사용, 저장소 루트 .env)로 옮긴 것이다.
+categories 테이블 시드 스크립트.
 
-DB.md 3.2절 스키마 기준으로 4개 category_type을 채운다. 가짜 placeholder가 아니라 실제
-출처에서 가져온 값이지만, 로컬 개발/테스트용 "대표 샘플"이라는 점에 유의한다:
+JOB 시딩(Wanted OpenAPI `GET /tags/categories`)은 common 브랜치가 실제 호출로 검증하고
+다듬은 로직(tag_id 기준 배치 upsert, _common.py 공용 헬퍼)을 그대로 채택했다 — 이유:
+`(category_type, parent_id, title)` 조합으로 존재 여부를 매번 SELECT-then-INSERT하는
+것보다, `tag_id`(원티드 원본 정수 ID, UNIQUE) 기준 on_conflict 배치 upsert가 더 빠르고
+(요청 수가 N+1 → 2회로 감소) depth1(parent_id=NULL) 행의 재실행 안전성도 더 낫다
+(NULL은 Postgres UNIQUE 비교에서 서로 다르다고 취급되어 SELECT-then-INSERT 쪽은 그
+경계에서 이론상 더 취약하다).
+
+INDUSTRY/REGION/SKILL은 common 브랜치에 대응하는 시딩이 없어(JOB만 다룸) company
+브랜치(backend/scripts/seed_categories.py) 로직을 그대로 유지한다:
 - INDUSTRY: seed_data_industry.json (통계청 KSIC 공식 분류 대표 6개 섹션 샘플)
 - REGION:   seed_data_region.json (행정안전부 법정동코드 공식 자료 대표 6개 시도 샘플)
-- JOB:      원티드 Open API `/v1/tags/categories` 전체 응답(대분류 전량, 실서비스와 동일)
 - SKILL:    원티드 Open API `/v1/tags/skills?keyword=...`를 키워드 목록으로 검색한 결과(id 중복 제거)
+이 세 개는 tag_id 같은 단일 자연키가 없거나(INDUSTRY는 depth별로 ksic_code 유무가 다름)
+매 실행마다 소량이라, `(category_type, parent_id, title)` 기준 find-then-insert 패턴을
+그대로 둔다.
 
-⚠️ 참고: 이 브랜치가 쓰는 라이브 Supabase 프로젝트(jobseeker-matching)에는 이미 이 스크립트가
-실행된 상태다(JOB 438건/SKILL 226건 tag_id 보유, INDUSTRY/REGION도 ksic_code/location_code
-보유, 2026-07-15 확인). (category_type, parent_id, title) 조합이 이미 있으면 건너뛰므로
-재실행해도 안전하지만, 보통은 다시 돌릴 필요가 없다 — 새 환경을 부트스트랩할 때만 필요하다.
+⚠️ 참고: 이 브랜치가 쓰는 라이브 Supabase 프로젝트(jobseeker-matching)에는 이미 4개
+category_type이 전부 시딩된 상태다(JOB 438건/SKILL 226건 tag_id 보유, INDUSTRY/REGION도
+ksic_code/location_code 보유, 2026-07-15 확인). 재실행해도 안전하지만 새 환경을
+부트스트랩할 때만 필요하다.
 
 사용법:
     python scripts/seed_categories.py
@@ -28,12 +37,14 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
+from _common import find_repo_root, load_env, supabase_upsert, is_placeholder
+
 for _stream in (sys.stdout, sys.stderr):
     if hasattr(_stream, "reconfigure"):
         _stream.reconfigure(encoding="utf-8")
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-DEFAULT_WANTED_BASE_URL = "https://openapi.wanted.jobs/v1"
+DEFAULT_BASE_URL = "https://openapi.wanted.jobs/v1"
 
 SKILL_KEYWORDS = [
     "JavaScript", "Python", "Java", "React", "Vue", "Node.js", "Spring", "SQL",
@@ -43,40 +54,101 @@ SKILL_KEYWORDS = [
 ]
 
 
-def find_repo_root(start):
-    d = start
-    while True:
-        if os.path.isfile(os.path.join(d, ".env")):
-            return d
-        parent = os.path.dirname(d)
-        if parent == d:
-            return start
-        d = parent
+# ---------------------------------------------------------------------------
+# JOB — common 브랜치의 tag_id 기준 배치 upsert 로직 그대로 채택
+# ---------------------------------------------------------------------------
 
-
-def load_env(path):
-    env = {}
-    if not os.path.isfile(path):
-        return env
-    with open(path, encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if not line or line.startswith("#") or "=" not in line:
-                continue
-            key, value = line.split("=", 1)
-            env[key.strip()] = value.strip()
-    return env
-
-
-def wanted_get(base_url, client_id, client_secret, path, params=None):
-    qs = "?" + urllib.parse.urlencode(params) if params else ""
+def fetch_categories(base_url, client_id, client_secret):
+    url = base_url.rstrip("/") + "/tags/categories"
     req = urllib.request.Request(
-        base_url.rstrip("/") + path + qs,
-        headers={"wanted-client-id": client_id, "wanted-client-secret": client_secret},
+        url,
+        headers={
+            "wanted-client-id": client_id,
+            "wanted-client-secret": client_secret,
+        },
     )
-    with urllib.request.urlopen(req, timeout=30) as resp:
-        return json.loads(resp.read().decode("utf-8"))
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            body = resp.read().decode("utf-8")
+            return json.loads(body)
+    except urllib.error.HTTPError as e:
+        detail = e.read().decode("utf-8", errors="replace")
+        raise RuntimeError("Wanted API HTTPError {}: {}".format(e.code, detail)) from e
+    except urllib.error.URLError as e:
+        raise RuntimeError("Wanted API 연결 실패: {}".format(e)) from e
 
+
+def build_upsert_rows(payload):
+    """
+    GET /tags/categories 응답(payload["data"])을
+    categories 테이블(category_type='JOB') upsert 대상으로 변환한다.
+    실제 호출로 검증한 응답 구조:
+        {"data": [
+            {"id": <int>, "parent_id": null, "title": <str>, "image_url": <str>,
+             "sub_tags": [{"id": <int>, "parent_id": <int>, "title": <str>, "image_url": <str>}, ...]},
+            ...
+        ]}
+    주의: 응답 필드명은 `id`이며 `tag_id`라는 필드명 자체는 Wanted 응답에 존재하지 않는다.
+    DB.md 3.2절의 `categories.tag_id` 컬럼은 이 `id` 값을 그대로 저장하기 위한 "우리 쪽" 컬럼명이다.
+    최상위 태그(parent_id=null)가 depth1(직군), sub_tags가 depth2(직무)에 대응한다.
+    depth1 행은 parent_id=NULL로 upsert 가능하지만, depth2 행의 parent_id(uuid)는
+    depth1을 먼저 upsert해서 얻은 tag_id -> uuid 매핑이 있어야 채울 수 있으므로,
+    이 함수는 depth2 행에 임시로 `parent_tag_id`(원티드 원본 정수 id)만 채워 반환한다.
+    """
+    depth1_rows = []
+    depth2_rows = []
+    for sort_order, parent in enumerate(payload.get("data", [])):
+        depth1_rows.append({
+            "category_type": "JOB",
+            "parent_id": None,           # depth1 = 최상위 (직군)
+            "title": parent["title"],
+            "tag_id": parent["id"],       # 원티드 응답의 id를 그대로 보존
+            "depth": 1,
+            "sort_order": sort_order,
+        })
+        for child_sort_order, child in enumerate(parent.get("sub_tags", [])):
+            depth2_rows.append({
+                "category_type": "JOB",
+                "parent_tag_id": parent["id"],  # upsert 2단계에서 uuid로 치환 필요 (아래 seed_job 참고)
+                "title": child["title"],
+                "tag_id": child["id"],
+                "depth": 2,
+                "sort_order": child_sort_order,
+            })
+    return depth1_rows, depth2_rows
+
+
+def seed_job(wanted_base_url, client_id, client_secret, supabase_url, service_role_key):
+    print("=== JOB 시드 시작 (Wanted Open API /v1/tags/categories) ===")
+    payload = fetch_categories(wanted_base_url, client_id, client_secret)
+    depth1_rows, depth2_rows = build_upsert_rows(payload)
+    print("[INFO] depth1(직군) {}건, depth2(직무) {}건 변환 완료".format(len(depth1_rows), len(depth2_rows)))
+
+    inserted_depth1 = supabase_upsert(supabase_url, service_role_key, "categories", depth1_rows, on_conflict="tag_id")
+    tag_id_to_uuid = {row["tag_id"]: row["id"] for row in inserted_depth1}
+    print("[INFO] depth1 upsert 완료: {}건 반영".format(len(inserted_depth1)))
+
+    resolved_depth2_rows = []
+    skipped = 0
+    for row in depth2_rows:
+        parent_tag_id = row.pop("parent_tag_id")
+        parent_uuid = tag_id_to_uuid.get(parent_tag_id)
+        if parent_uuid is None:
+            skipped += 1
+            continue
+        row["parent_id"] = parent_uuid
+        resolved_depth2_rows.append(row)
+    if skipped:
+        print("[WARN] 부모 tag_id 매핑을 못 찾아 건너뛴 depth2 행 {}건".format(skipped), file=sys.stderr)
+
+    inserted_depth2 = supabase_upsert(
+        supabase_url, service_role_key, "categories", resolved_depth2_rows, on_conflict="tag_id")
+    print("JOB 신규/갱신: depth1 {}건, depth2 {}건".format(len(inserted_depth1), len(inserted_depth2)))
+
+
+# ---------------------------------------------------------------------------
+# INDUSTRY/REGION/SKILL — company 브랜치 로직 유지(단일 자연키가 없어 find-then-insert 패턴)
+# ---------------------------------------------------------------------------
 
 def sb_request(supabase_url, service_role_key, method, path, params=None, body=None, extra_headers=None):
     qs = "?" + urllib.parse.urlencode(params) if params else ""
@@ -203,29 +275,17 @@ def seed_region(supabase_url, service_role_key):
     print("REGION 신규 삽입: {}건 (source: {})".format(inserted, data["_source"]))
 
 
-def seed_job(wanted_base_url, client_id, client_secret, supabase_url, service_role_key):
-    print("=== JOB 시드 시작 (Wanted Open API /v1/tags/categories) ===")
-    payload = wanted_get(wanted_base_url, client_id, client_secret, "/tags/categories")
-    items = payload["data"] if isinstance(payload, dict) else payload
-
-    inserted = 0
-    for i, item in enumerate(items):
-        parent_id, created = upsert_category(supabase_url, service_role_key, "JOB", None, item["title"],
-                                              depth=1, sort_order=i, tag_id=item["id"])
-        inserted += int(created)
-        for j, sub in enumerate(item.get("sub_tags", [])):
-            _, sub_created = upsert_category(supabase_url, service_role_key, "JOB", parent_id, sub["title"],
-                                              depth=2, sort_order=j, tag_id=sub["id"])
-            inserted += int(sub_created)
-
-    print("JOB 신규 삽입: {}건 (원티드 직군 {}개 전량)".format(inserted, len(items)))
-
-
 def seed_skill(wanted_base_url, client_id, client_secret, supabase_url, service_role_key):
     print("=== SKILL 시드 시작 (Wanted Open API /v1/tags/skills, 키워드 검색) ===")
     seen_by_id = {}
     for kw in SKILL_KEYWORDS:
-        payload = wanted_get(wanted_base_url, client_id, client_secret, "/tags/skills", {"keyword": kw})
+        qs = urllib.parse.urlencode({"keyword": kw})
+        req = urllib.request.Request(
+            wanted_base_url.rstrip("/") + "/tags/skills?" + qs,
+            headers={"wanted-client-id": client_id, "wanted-client-secret": client_secret},
+        )
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            payload = json.loads(resp.read().decode("utf-8"))
         items = payload["data"] if isinstance(payload, dict) else payload
         for item in items:
             seen_by_id[item["id"]] = item["title"]
@@ -256,11 +316,11 @@ def main():
 
     client_id = env.get("client_id", "")
     client_secret = env.get("client_secret", "")
-    wanted_base_url = env.get("WANTED_API_BASE_URL") or DEFAULT_WANTED_BASE_URL
+    wanted_base_url = env.get("WANTED_API_BASE_URL") or DEFAULT_BASE_URL
     supabase_url = env.get("SUPABASE_URL", "").strip()
     service_role_key = env.get("SUPABASE_SERVICE_ROLE_KEY", "").strip()
 
-    if not client_id or not client_secret or not supabase_url or not service_role_key:
+    if not client_id or not client_secret or is_placeholder(supabase_url) or not service_role_key:
         print("[ERROR] .env에 client_id/client_secret/SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY가 필요합니다.",
               file=sys.stderr)
         sys.exit(1)

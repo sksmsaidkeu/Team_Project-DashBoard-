@@ -3,8 +3,13 @@
 .env.*
 !.env.example
 
-# Generated config (from .env via scripts/generate_config.py)
+# 실제 Supabase/뉴스 API 키가 담기는 생성 파일 (scripts/generate_config.py가 .env로부터 재생성).
+# 이 저장소는 public이라, 실제 키가 커밋 이력에 남지 않도록 로컬 전용으로 둔다.
 /js/config.js
+
+# Python bytecode cache
+__pycache__/
+*.pyc
 
 # Persona files
 /persona/
@@ -17,6 +22,5 @@ openapi.json
 # scripts/import_wanted_data.py 중간 산출물(원티드 API 실호출 결과, 재실행마다 달라짐)
 /scripts/data/
 
-# Python 캐시
-__pycache__/
-*.pyc
+# Personal local Claude Code agent team config (not shared with team)
+/.claude/

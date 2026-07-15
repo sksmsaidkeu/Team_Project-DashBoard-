@@ -270,6 +270,176 @@
   text-align: center;
 }
 
+/* 메인 페이지 — 히어로 (DESIGN.md 4.1절, --pink-tint-50 wash 배경). common 브랜치 tab-main.js/
+   index.html의 히어로 검색·역할 선택 CTA·시장 인사이트 그룹·추천 하이라이트·최근 공고/인재·
+   채용 뉴스 섹션에 대응하는 스타일을 그대로 채택 — 이 브랜치엔 해당 마크업이 없었다. */
+.hero {
+  background: var(--pink-tint-50);
+  border-radius: var(--radius-lg);
+  padding: var(--space-16) var(--space-6);
+  text-align: center;
+  margin-bottom: var(--space-12);
+}
+.hero .page-lead {
+  margin-left: auto;
+  margin-right: auto;
+}
+.hero-search {
+  display: flex;
+  gap: var(--space-2);
+  max-width: 640px;
+  margin: var(--space-6) auto var(--space-4);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  padding: var(--space-2);
+  box-shadow: 0 8px 24px rgba(26, 21, 35, 0.08);
+}
+.hero-search:focus-within {
+  border-color: var(--pink-primary);
+}
+.hero-search__input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: var(--space-3);
+}
+.hero-search__select {
+  border: none;
+  border-right: 1px solid var(--line);
+  background: transparent;
+  border-radius: 0;
+  padding: var(--space-3) var(--space-2);
+}
+@media (max-width: 480px) {
+  .hero-search {
+    flex-direction: column;
+    border-radius: var(--radius-lg);
+  }
+  .hero-search__select {
+    border-right: none;
+    border-bottom: 1px solid var(--line);
+  }
+}
+
+/* 메인 페이지 그룹(A~E) 간 간격 — 브레이크포인트별 차등(모바일 32 / 태블릿 48 / 데스크톱 64). */
+.main-section {
+  margin-bottom: var(--space-8);
+}
+@media (min-width: 481px) {
+  .main-section { margin-bottom: var(--space-12); }
+}
+@media (min-width: 769px) {
+  .main-section { margin-bottom: var(--space-16); }
+}
+
+/* 섹션 내 소제목 (h3~h6은 600 웨이트) */
+.text-h3 {
+  font: 600 var(--text-h3)/1.3 var(--font-sans);
+  margin-bottom: var(--space-3);
+}
+
+/* Group B(시장 인사이트) 컨테이너 — 채용 트렌드/원티드 트렌드/스킬 랭킹·조합을 하나의
+   시각적 그룹으로 묶는 배경 wash + 보더. */
+.section-group {
+  background: var(--paper-dim);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: var(--space-8) var(--space-6);
+  margin-bottom: var(--space-8);
+}
+@media (min-width: 481px) {
+  .section-group { margin-bottom: var(--space-12); }
+}
+@media (min-width: 769px) {
+  .section-group { margin-bottom: var(--space-16); }
+}
+
+/* 그룹 라벨(오버라인) */
+.section-group__overline {
+  font: 600 var(--text-tag)/1.2 var(--font-sans);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--pink-active);
+  margin: 0 0 var(--space-4);
+}
+
+/* 그룹 내부 섹션 간 간격 — 그룹 간 간격(.main-section/.section-group)보다 항상 작게 고정 */
+.section-group__item {
+  margin-bottom: var(--space-6);
+}
+.section-group__item:last-child {
+  margin-bottom: 0;
+}
+.section-group__item .empty-state {
+  background: var(--paper);
+}
+
+/* 역할 선택 CTA — 메인에서 탭1/탭2 가입 흐름으로 바로 진입 */
+.role-cta-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-6);
+}
+@media (max-width: 640px) {
+  .role-cta-grid { grid-template-columns: 1fr; }
+}
+.role-cta-card {
+  display: block;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+.role-cta-card:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+/* 추천 하이라이트 — 가로 스크롤 캐러셀 */
+.highlight-carousel {
+  display: flex;
+  gap: var(--space-6);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding: var(--space-2) var(--space-1) var(--space-4);
+}
+.highlight-carousel > * {
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+}
+
+/* 최근 공고 / 최근 인재 — 데스크톱 2열, 모바일 1열 */
+.recent-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-8);
+}
+@media (max-width: 768px) {
+  .recent-section {
+    grid-template-columns: 1fr;
+    gap: var(--space-6);
+  }
+}
+.recent-section__col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* 채용 뉴스(메인 탭) — 카드 리스트 세로 배치 */
+.news-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .highlight-carousel {
+    scroll-behavior: auto;
+  }
+}
+
 /* 구직자 대시보드 */
 .jobseeker-container {
   display: flex;

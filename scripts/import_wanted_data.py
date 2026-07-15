@@ -48,6 +48,8 @@ import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
 
+from _common import find_repo_root, load_env
+
 for _stream in (sys.stdout, sys.stderr):
     if hasattr(_stream, "reconfigure"):
         _stream.reconfigure(encoding="utf-8")
@@ -116,35 +118,6 @@ DEFAULT_INDUSTRY_SECTION = "M"
 COMMON_SKILL_TITLES = ["Python", "Java", "JavaScript", "React", "SQL", "Spring", "AWS", "Figma"]
 
 SIDO_SUFFIXES = ("특별시", "광역시", "특별자치시", "특별자치도", "도")
-
-
-# ---------------------------------------------------------------------------
-# .env 로딩 (scripts/fetch_wanted_trend.py와 동일)
-# ---------------------------------------------------------------------------
-
-def find_repo_root(start):
-    d = start
-    while True:
-        if os.path.isfile(os.path.join(d, ".env")):
-            return d
-        parent = os.path.dirname(d)
-        if parent == d:
-            return start
-        d = parent
-
-
-def load_env(path):
-    env = {}
-    if not os.path.isfile(path):
-        return env
-    with open(path, encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if not line or line.startswith("#") or "=" not in line:
-                continue
-            key, value = line.split("=", 1)
-            env[key.strip()] = value.strip()
-    return env
 
 
 # ---------------------------------------------------------------------------
@@ -428,6 +401,22 @@ def load_to_supabase(supabase_url, service_role_key):
 
     new_region = n_company = n_job = n_skill_link = job_counter = 0
     skipped_companies = []
+
+    # ⚠️ 중복 적재 위험 — 미해결: company 브랜치의 backend/scripts/import_wanted_data.py가
+    # 이 마이그레이션(wanted_company_id 컬럼 추가) 이전에 이미 이 라이브 프로젝트에 회사를
+    # 적재해뒀다. 그 행들은 wanted_company_id도 company_name도 전부 NULL이라(company 스크립트가
+    # company_name을 채우지 않음) 아래 wanted_company_id 매치로도, 이름 매칭으로도 "이미 있음"을
+    # 신뢰성 있게 구분할 방법이 없다 — 잘못된 이름 매칭은 서로 다른 두 회사를 같다고 오판할 수도
+    # 있어 오히려 위험하다. 따라서 자동 dedup을 시도하지 않고 실행 전에 크게 경고만 한다.
+    # 제대로 고치려면: 그 기존 행들에 실제 wanted_company_id를 역으로 채우는 백필이 필요하다
+    # (예: 원티드 API를 다시 호출해 회사 주소/직군으로 대사) — 스크립트 로직만으로는 안전하게
+    # 자동화할 수 없는 판단(오매칭 허용 범위)이 필요해 PM 결정 사항으로 남긴다.
+    legacy_unmapped = sb_get(supabase_url, service_role_key, "company_profiles",
+                             {"select": "id", "wanted_company_id": "is.null"})
+    if legacy_unmapped:
+        print("[WARN] wanted_company_id가 없는 기존 company_profiles {}건이 이미 있습니다 — "
+              "이 스크립트를 실행하면 이미 적재된 실제 회사와 같은 회사가 중복 생성될 수 있습니다. "
+              "계속하기 전에 백필 여부를 확인하세요.".format(len(legacy_unmapped)), file=sys.stderr)
 
     for idx, c in enumerate(companies, start=1):
         # 이미 이 원티드 회사가 적재돼 있으면(wanted_company_id 매치) 통째로 건너뛴다(재실행 안전).

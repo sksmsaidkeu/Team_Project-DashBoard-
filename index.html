@@ -12,6 +12,19 @@
   <link rel="stylesheet" href="css/app.css" />
 </head>
 <body>
+  <!-- index.html을 file://로 직접 열면 <script type="module">이 브라우저 CORS 정책으로 차단되어
+       모든 JS(탭 전환/로그인/검색 등)가 조용히 동작하지 않는다. 이를 눈에 보이게 알려주는 안전장치.
+       (일반 <script>라 module 차단과 무관하게 항상 실행된다) -->
+  <script>
+    if (location.protocol === 'file:') {
+      document.write(
+        '<div id="file-protocol-warning" style="background:#E85C5C;color:#fff;padding:12px 20px;font:600 14px sans-serif;text-align:center">' +
+        '이 페이지는 파일을 더블클릭해서 열면 정상 동작하지 않습니다. 로컬 서버로 띄워서' +
+        ' (예: <code>python -m http.server</code> 실행 후 http://localhost:8000/index.html 접속) 열어주세요.' +
+        '</div>'
+      );
+    }
+  </script>
   <a class="skip-link" href="#main-content">본문 바로가기</a>
 
   <header class="site-header">
@@ -19,9 +32,17 @@
       <a class="logo" href="#" data-tab="main">채용 플랫폼</a>
 
       <nav class="tabs" role="tablist" aria-label="주요 화면 전환">
-        <button class="tab" role="tab" id="tab-btn-main" aria-selected="true" aria-controls="panel-main" data-tab="main">메인</button>
-        <button class="tab" role="tab" id="tab-btn-company" aria-selected="false" aria-controls="panel-company" data-tab="company">기업(Tab1)</button>
-        <button class="tab" role="tab" id="tab-btn-jobseeker" aria-selected="false" aria-controls="panel-jobseeker" data-tab="jobseeker">구직자(Tab2)</button>
+        <button class="tab" role="tab" id="tab-btn-main" aria-selected="true" aria-controls="panel-main" data-tab="main">
+          <span class="tab__label">메인</span>
+        </button>
+        <button class="tab" role="tab" id="tab-btn-company" aria-selected="false" aria-controls="panel-company" data-tab="company">
+          <span class="tab__label">기업</span>
+          <span class="tab__sublabel">Tab1</span>
+        </button>
+        <button class="tab" role="tab" id="tab-btn-jobseeker" aria-selected="false" aria-controls="panel-jobseeker" data-tab="jobseeker">
+          <span class="tab__label">구직자</span>
+          <span class="tab__sublabel">Tab2</span>
+        </button>
       </nav>
 
       <div class="auth-bar" id="auth-bar"></div>
@@ -32,11 +53,99 @@
 
     <!-- 메인 -->
     <section id="panel-main" class="tab-panel" role="tabpanel" aria-labelledby="tab-btn-main">
-      <h1 class="page-title">카테고리 기반으로, 꼭 맞는 채용을 찾다</h1>
-      <p class="page-lead">
-        상단 탭에서 기업/구직자 화면으로 이동할 수 있습니다. 아직 계정이 없다면 아래에서 가입을 시작하세요.
-      </p>
-      <button type="button" class="btn btn-primary" id="signup-entry-btn">회원가입 시작하기</button>
+
+      <!-- Group A(진입): 히어로 검색 + 역할 선택 CTA — DESIGN.md 4.1절 -->
+      <!-- 히어로: 통합 검색 -->
+      <section class="hero">
+        <h1 class="page-title">카테고리 기반으로, 꼭 맞는 채용을 찾다</h1>
+        <p class="page-lead">
+          상단 탭에서 기업/구직자 화면으로 이동할 수 있습니다. 아직 계정이 없다면 아래에서 가입을 시작하세요.
+        </p>
+
+        <form id="hero-search-form" class="hero-search" role="search">
+          <label class="sr-only" for="hero-search-job">직무로 필터</label>
+          <select id="hero-search-job" class="form-select hero-search__select">
+            <option value="">직무 전체</option>
+          </select>
+          <label class="sr-only" for="hero-search-region">지역으로 필터</label>
+          <select id="hero-search-region" class="form-select hero-search__select">
+            <option value="">지역 전체</option>
+          </select>
+          <label class="sr-only" for="hero-search-input">스킬, 회사명으로 검색</label>
+          <input
+            type="search"
+            id="hero-search-input"
+            class="form-input hero-search__input"
+            placeholder="스킬, 회사명으로 검색"
+          />
+          <button type="submit" class="btn btn-primary">검색</button>
+        </form>
+      </section>
+
+      <!-- 역할 선택 CTA: 메인에서 탭1(기업)/탭2(구직자) 가입 흐름으로 바로 진입 -->
+      <section class="main-section" id="main-role-cta">
+        <div class="role-cta-grid">
+          <button type="button" class="card role-cta-card" data-role-cta="COMPANY">
+            <h3 class="card__title">기업으로 시작하기</h3>
+            <p class="card__meta">인재를 검색하고 공고를 관리하세요</p>
+          </button>
+          <button type="button" class="card role-cta-card" data-role-cta="JOBSEEKER">
+            <h3 class="card__title">구직자로 시작하기</h3>
+            <p class="card__meta">맞춤 공고를 받아보고 지원하세요</p>
+          </button>
+        </div>
+      </section>
+
+      <!-- Group B: 시장 인사이트 컨테이너 (DESIGN.md 4.1절 그룹핑 원칙). -->
+      <section class="section-group" aria-label="시장 데이터 섹션 그룹">
+        <p class="section-group__overline" aria-hidden="true">시장 데이터</p>
+
+        <div class="section-group__item">
+          <h2 class="text-h2" id="main-trend-heading">채용 트렌드 <span class="card__meta">(우리 플랫폼 기준)</span></h2>
+          <div id="main-trend" aria-labelledby="main-trend-heading"></div>
+        </div>
+
+        <div class="section-group__item">
+          <h2 class="text-h2" id="main-wanted-trend-heading">실시간 채용 시장 동향 (원티드 제공)</h2>
+          <p class="card__meta">원티드에 게시된 실제 공고 데이터를 기반으로 집계됩니다.</p>
+          <div id="main-wanted-trend" aria-labelledby="main-wanted-trend-heading"></div>
+        </div>
+
+        <div class="section-group__item">
+          <h2 class="text-h2" id="main-skill-heading">스킬 수요 랭킹 & 조합 분석</h2>
+          <h3 class="text-h3">인기 스킬 랭킹</h3>
+          <div id="main-skill-ranking" aria-labelledby="main-skill-heading"></div>
+          <h3 class="text-h3">자주 함께 요구되는 스킬 조합</h3>
+          <div id="main-skill-combo"></div>
+        </div>
+      </section>
+
+      <!-- Group C(개인화): 추천 하이라이트 -->
+      <section class="main-section">
+        <h2 class="text-h2" id="main-highlight-heading">추천 하이라이트</h2>
+        <div id="main-highlight-carousel" class="highlight-carousel" aria-labelledby="main-highlight-heading"></div>
+      </section>
+
+      <!-- Group D(최근 등록): 최근 공고 / 최근 인재 -->
+      <section class="main-section">
+        <div id="main-recent-section" class="recent-section">
+          <div class="recent-section__col">
+            <h2 class="text-h2" id="main-recent-jobs-heading">최근 공고</h2>
+            <div id="main-recent-jobs" aria-labelledby="main-recent-jobs-heading"></div>
+          </div>
+          <div class="recent-section__col">
+            <h2 class="text-h2" id="main-recent-talent-heading">최근 인재</h2>
+            <div id="main-recent-talent" aria-labelledby="main-recent-talent-heading"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Group E(읽을거리): 채용 뉴스 -->
+      <section class="main-section">
+        <h2 class="text-h2" id="main-news-heading">채용 뉴스</h2>
+        <div id="main-news" class="news-section" aria-labelledby="main-news-heading"></div>
+      </section>
+
     </section>
 
     <!-- 회원가입 (1단계: 역할 선택 → 2단계: 기업/구직자 분기 폼) -->
@@ -251,6 +360,13 @@
     </section>
 
   </main>
+
+  <footer class="site-footer">
+    <div class="site-footer__inner">
+      <span class="site-footer__brand">채용 플랫폼</span>
+      <span class="site-footer__copyright">© 2026 채용 플랫폼. All rights reserved.</span>
+    </div>
+  </footer>
 
   <script type="module" src="js/app.js"></script>
 </body>
