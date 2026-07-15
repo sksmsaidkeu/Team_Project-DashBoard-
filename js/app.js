@@ -1,8 +1,9 @@
 import { supabase } from './supabaseClient.js';
-import { getSession, loginWithPassword, logout } from './auth.js';
+import { getSession, getCurrentUserProfile, loginWithPassword, logout } from './auth.js';
 import { initSignup } from './signup.js';
+import { showWelcomeModal } from './welcome.js';
 import { renderCompanyHighlight, initCompanySubtabs } from './tab-company.js';
-import { renderJobseekerHighlight } from './tab-jobseeker.js';
+import { renderJobseekerDashboard } from './jobseeker-dashboard.js';
 import {
   renderMainHighlight,
   renderRecentJobs,
@@ -14,7 +15,7 @@ import {
   renderSkillCombo,
   renderWantedTrend,
 } from './tab-main.js';
-import { escapeHtml } from './utils.js';
+import { escapeHtml, tabForRole } from './utils.js';
 
 const tabButtons = document.querySelectorAll('.tab');
 const panels = {
@@ -26,6 +27,7 @@ const panels = {
 };
 const authBar = document.getElementById('auth-bar');
 const signupEntryBtn = document.getElementById('signup-entry-btn');
+const companyHighlightEl = document.getElementById('company-highlight');
 
 // "메인" 탭은 로그인 회원 전용 종합 대시보드다(회원 유인 전략, 2026-07-14 결정).
 // 비로그인 방문자에게는 main-member-gate(가입 유도)만 보여주고, common에서 이식한 실제
@@ -79,11 +81,11 @@ function setActiveTab(tabName) {
     renderMainDashboard();
   }
   if (tabName === 'company') {
-    renderCompanyHighlight(document.getElementById('company-highlight'));
+    renderCompanyHighlight(companyHighlightEl);
     initCompanySubtabs();
   }
   if (tabName === 'jobseeker') {
-    renderJobseekerHighlight(document.getElementById('jobseeker-highlight'));
+    renderJobseekerDashboard();
   }
 }
 
@@ -111,6 +113,7 @@ function renderAuthBar(session) {
         <input class="form-input form-input--sm" type="password" id="login-password" placeholder="비밀번호" required autocomplete="current-password" />
         <button type="submit" class="btn btn-secondary">로그인</button>
       </form>
+      <button type="button" class="btn btn-primary" id="signup-entry-btn-header">회원가입</button>
     `;
 
     document.getElementById('login-form').addEventListener('submit', async (e) => {
@@ -120,8 +123,19 @@ function renderAuthBar(session) {
       const { error } = await loginWithPassword(email, password);
       if (error) {
         window.alert(`로그인에 실패했습니다: ${error.message}`);
+        return;
       }
+
+      // 로그인 성공 시에도 회원가입과 동일하게 환영 모달 → 본인 역할 탭 이동으로 연결한다.
+      const profile = await getCurrentUserProfile();
+      const role = profile?.userType || null;
+      showWelcomeModal({
+        role,
+        mode: 'login',
+        onContinue: () => setActiveTab(tabForRole(role)),
+      });
     });
+    document.getElementById('signup-entry-btn-header').addEventListener('click', () => setActiveTab('signup'));
     return;
   }
 
@@ -137,15 +151,19 @@ function refreshActiveTabContent() {
   const activeTab = document.querySelector('.tab[aria-selected="true"]')?.dataset.tab;
   if (activeTab === 'main') renderMainDashboard();
   if (activeTab === 'company') {
-    renderCompanyHighlight(document.getElementById('company-highlight'));
+    renderCompanyHighlight(companyHighlightEl);
     initCompanySubtabs();
   }
-  if (activeTab === 'jobseeker') renderJobseekerHighlight(document.getElementById('jobseeker-highlight'));
+  if (activeTab === 'jobseeker') renderJobseekerDashboard();
 }
 
 initSignup({
   onSuccess: (userType) => {
-    setActiveTab(userType === 'COMPANY' ? 'company' : 'jobseeker');
+    showWelcomeModal({
+      role: userType,
+      mode: 'signup',
+      onContinue: () => setActiveTab(tabForRole(userType)),
+    });
   },
 });
 

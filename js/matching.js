@@ -1,5 +1,6 @@
 import { supabase } from './supabaseClient.js';
 import { fetchCategoriesByIds, resolvePositionGroupId } from './categories.js';
+import { resolveRegionFilterIds } from './utils.js';
 
 /**
  * 기업<->구직자 매칭 파이프라인 공용 헬퍼 (REFACT.md P0-1/P0-2).
@@ -71,9 +72,12 @@ export async function fetchMatchingPostings(jobseeker, limit) {
   const companyMap = await fetchCompaniesByIds(postings.map((p) => p.company_profile_id));
 
   if (jobseeker.region_category_id) {
+    // 완전일치(===)는 REGION 카테고리 depth가 기업/구직자 트리 간에 다르면 거의 항상
+    // 매치 실패한다 — 선택 카테고리 자신 + 하위 전체 id로 확장해서 매칭한다.
+    const regionIds = new Set(await resolveRegionFilterIds(jobseeker.region_category_id));
     postings = postings.filter((p) => {
       const company = companyMap[p.company_profile_id];
-      return company && company.region_category_id === jobseeker.region_category_id;
+      return company && regionIds.has(company.region_category_id);
     });
   }
 
@@ -120,7 +124,12 @@ export async function fetchMatchingJobseekers(company, limit) {
     .eq('is_salary_public', true);
 
   if (company.position_category_id) query = query.eq('desired_position_category_id', company.position_category_id);
-  if (company.region_category_id) query = query.eq('region_category_id', company.region_category_id);
+  if (company.region_category_id) {
+    // 완전일치(===)는 REGION 카테고리 depth가 기업/구직자 트리 간에 다르면 거의 항상
+    // 매치 실패한다 — 선택 카테고리 자신 + 하위 전체 id로 확장해서 매칭한다.
+    const regionIds = await resolveRegionFilterIds(company.region_category_id);
+    query = query.in('region_category_id', regionIds);
+  }
 
   const { data: candidateRows, error: candidateError } = await query;
   if (candidateError) throw candidateError;

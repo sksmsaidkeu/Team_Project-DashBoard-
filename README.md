@@ -142,5 +142,5 @@ Wanted API에는 업종/지역 전체 목록을 주는 엔드포인트가 없어
 
 - **프런트엔드**: HTML/CSS/JavaScript 기반 단일 페이지 웹앱(SPA), Supabase JS 클라이언트로 인증/카테고리 조회 등을 직접 처리
 - **기업 탭(Tab1) 백엔드**: Python FastAPI (`backend/`) — Supabase Postgres에 `supabase-py`(service_role)로 접근, 앱 레벨에서 소유권/권한 검증
-- **데이터베이스/인증**: Supabase (Postgres, Auth, RLS)
+- **데이터베이스/인증**: Supabase (Postgres, Auth, RLS, Edge Functions)
 - **외부 데이터**: 원티드(Wanted) Open API (`openapi.json`/`openapi (1).json`은 참고용 명세, 실제 연동은 `backend/scripts/seed_categories.py` 및 향후 공고 연동 로직에서 사용)

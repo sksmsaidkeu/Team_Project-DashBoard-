@@ -2,7 +2,8 @@
    색상/spacing/radius는 모두 css/tokens.css의 기존 토큰만 사용한다. */
 
 .site-header {
-  border-bottom: 1px solid var(--line);
+  /* 2026-07-13: 1b_대시보드_reference.html의 헤더 보더(#FFE3ED)에 맞춰 --pink-tint-50으로 교체(장식용) */
+  border-bottom: 1px solid var(--pink-tint-50);
   background: var(--paper);
   position: sticky;
   top: 0;
@@ -28,18 +29,39 @@
   gap: var(--space-2);
   flex: 1;
 }
+/* 2026-07-14: 언더라인 인디케이터 -> pill 인디케이터로 교체(New.html 디자인 반영) */
 .tab {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 44px;
+  min-height: 44px;
   background: transparent;
   border: none;
-  border-bottom: 3px solid transparent;
+  border-radius: var(--radius-pill);
   padding: var(--space-3) var(--space-4);
-  font: 600 var(--text-label)/1.2 var(--font-sans);
   color: var(--ink-soft);
   cursor: pointer;
+  transition: background-color .15s ease, color .15s ease;
+}
+.tab__label {
+  font: 600 var(--text-label)/1.2 var(--font-sans);
+}
+.tab__sublabel {
+  font: 400 var(--text-caption)/1.2 var(--font-sans);
+  color: var(--muted-strong);
+}
+.tab:hover {
+  background: var(--pink-tint-50);
 }
 .tab[aria-selected="true"] {
   color: var(--ink);
-  border-bottom-color: var(--pink-primary);
+  background: var(--pink-tint-50);
+}
+.tab[aria-selected="true"] .tab__sublabel {
+  color: var(--pink-active);
 }
 .tab:focus-visible {
   outline: 2px solid var(--ink);
@@ -341,11 +363,71 @@
   .candidate-grid { grid-template-columns: 1fr; }
 }
 
-.job-card {
-  display: flex;
-  gap: var(--space-4);
-  align-items: flex-start;
+.card {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  transition: all 150ms ease;
 }
+
+.card:hover {
+  border-color: var(--pink-primary);
+  box-shadow: 0 2px 6px rgba(255, 107, 157, 0.12);
+  transform: translateY(-1px);
+}
+
+.card__title {
+  font: 600 var(--text-body)/1.2 var(--font-sans);
+  color: var(--ink);
+  margin-bottom: var(--space-2);
+}
+
+.card__meta {
+  font: 400 var(--text-body-sm)/1.4 var(--font-sans);
+  color: var(--muted-strong);
+}
+
+.match-score {
+  display: inline-block;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  font: 600 var(--text-tag)/1 var(--font-sans);
+  margin-bottom: var(--space-2);
+}
+
+.match-score--matched {
+  background: var(--accent-cool-tint-50);
+  color: var(--accent-cool-strong);
+}
+
+.job-card {
+  display: block;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  margin-bottom: var(--space-3);
+  transition: all 150ms ease;
+  cursor: pointer;
+}
+
+.job-card:hover {
+  border-color: var(--pink-primary);
+  box-shadow: 0 2px 6px rgba(255, 107, 157, 0.12);
+  transform: translateY(-1px);
+}
+
+.job-card.success {
+  background: var(--accent-cool-tint-50);
+  border-color: var(--accent-cool);
+}
+
+.job-card.error {
+  background: var(--negative-tint-50);
+  border-color: var(--negative);
+}
+
 .job-card__body { flex: 1; }
 
 .empty-state {
@@ -437,6 +519,21 @@
 /* ====================================================================
    아래부터는 common 브랜치의 '메인' 탭 대시보드 이식분(hero-search ~ rank-bar 등).출처: Team_Project_common css/app.css 243~508행.
    ==================================================================== */
+/* 메인 탭(#panel-main)의 히어로 검색 섹션 wash 배경 (DESIGN.md 4.1절).
+   #panel-start의 랜딩 히어로(.hero, 위 76행)와 클래스명이 같아 #panel-main으로 스코프해 분리한다 —
+   스코프 없이 같은 .hero 셀렉터를 또 정의하면 소스 순서상 나중 규칙이 이겨 랜딩 히어로의
+   grid 레이아웃(두 컬럼)이 깨진다. */
+#panel-main .hero {
+  background: var(--pink-tint-50);
+  border-radius: var(--radius-lg);
+  padding: var(--space-16) var(--space-6);
+  text-align: center;
+  margin-bottom: var(--space-12);
+}
+#panel-main .hero .page-lead {
+  margin-left: auto;
+  margin-right: auto;
+}
 .hero-search {
   display: flex;
   gap: var(--space-2);
@@ -581,7 +678,7 @@
   gap: var(--space-4);
 }
 
-/* 채용 뉴스 — 카드 리스트 세로 배치 */
+/* 채용 뉴스(메인 탭) — 카드 리스트 세로 배치 */
 .news-section {
   display: flex;
   flex-direction: column;
@@ -592,6 +689,300 @@
   .highlight-carousel {
     scroll-behavior: auto;
   }
+}
+
+/* 구직자 대시보드 */
+.jobseeker-container {
+  display: flex;
+  gap: var(--space-6);
+}
+
+.kanban-section {
+  flex: 1.86;
+  min-width: 0;
+}
+
+.kanban-title {
+  font: 700 var(--text-h3)/1.2 var(--font-sans);
+  margin-bottom: var(--space-4);
+  color: var(--ink);
+}
+
+.kanban {
+  display: flex;
+  gap: var(--space-3);
+  overflow-x: auto;
+  padding-bottom: var(--space-2);
+}
+
+.kanban-col {
+  flex: 0 0 270px;
+  display: flex;
+  flex-direction: column;
+}
+
+.col-header {
+  padding: var(--space-3) var(--space-3);
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  color: white;
+  font: 600 var(--text-label)/1.2 var(--font-sans);
+  margin-bottom: var(--space-3);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  letter-spacing: -0.2px;
+}
+
+.col-header.stage-1 { background: var(--pink-primary); }
+.col-header.stage-2 { background: var(--pink-tint-100); }
+.col-header.stage-3 { background: var(--pink-tint-200); }
+.col-header.stage-4 { background: var(--pink-active); }
+
+.count {
+  background: rgba(255, 255, 255, 0.35);
+  padding: 2px 8px;
+  border-radius: 6px;
+  font: 600 var(--text-tag)/1 var(--font-sans);
+}
+
+.sidebar {
+  flex: 0 0 300px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-height: calc(100vh - 200px);
+  overflow-y: auto;
+}
+
+.sidebar-section {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+}
+
+.section-title {
+  font: 600 var(--text-h6)/1.2 var(--font-sans);
+  margin-bottom: var(--space-3);
+  color: var(--ink);
+  letter-spacing: -0.2px;
+}
+
+.stat-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: var(--space-3);
+  font: 400 var(--text-body-sm)/1.2 var(--font-sans);
+}
+
+.stat-item:last-child {
+  margin-bottom: 0;
+}
+
+.stat-label {
+  color: var(--muted-strong);
+  font-weight: 400;
+}
+
+.stat-value {
+  font: 600 var(--text-h4)/1.2 var(--font-sans);
+  color: var(--ink);
+  letter-spacing: -0.2px;
+}
+
+.stat-change {
+  font: 600 var(--text-caption)/1.2 var(--font-sans);
+  color: var(--accent-cool-strong);
+  margin-left: var(--space-1);
+}
+
+.trend-item {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--line);
+}
+
+.trend-item:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.trend-rank {
+  font: 600 var(--text-h4)/1.2 var(--font-sans);
+  color: var(--pink-primary);
+  min-width: 20px;
+  text-align: center;
+}
+
+.trend-info {
+  flex: 1;
+}
+
+.trend-name {
+  font: 600 var(--text-body-sm)/1.2 var(--font-sans);
+  color: var(--ink);
+  margin-bottom: 2px;
+}
+
+.trend-meta {
+  font: 400 var(--text-caption)/1.2 var(--font-sans);
+  color: var(--muted-strong);
+}
+
+.trend-change {
+  color: var(--accent-cool-strong);
+  font-weight: 600;
+}
+
+.rec-item {
+  margin-bottom: var(--space-3);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--line);
+}
+
+.rec-item:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.rec-badge {
+  display: inline-block;
+  background: var(--pink-tint-50);
+  color: var(--pink-primary);
+  font: 600 var(--text-caption)/1.2 var(--font-sans);
+  padding: 3px 7px;
+  border-radius: 5px;
+  margin-bottom: var(--space-2);
+}
+
+.rec-title {
+  font: 600 var(--text-body-sm)/1.2 var(--font-sans);
+  color: var(--ink);
+  margin-bottom: 2px;
+  letter-spacing: -0.1px;
+}
+
+.rec-meta {
+  font: 400 var(--text-caption)/1.4 var(--font-sans);
+  color: var(--muted-strong);
+  line-height: 1.4;
+  margin-bottom: var(--space-2);
+}
+
+.rec-btn {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--pink-primary);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font: 600 var(--text-caption)/1 var(--font-sans);
+  cursor: pointer;
+  transition: all 150ms;
+}
+
+.rec-btn:hover {
+  border-color: var(--pink-primary);
+  background: var(--pink-tint-50);
+}
+
+.news-item {
+  margin-bottom: var(--space-2);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--line);
+}
+
+.news-item:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.news-title {
+  font: 600 var(--text-caption)/1.3 var(--font-sans);
+  color: var(--ink);
+  margin-bottom: 2px;
+  line-height: 1.3;
+}
+
+.news-source {
+  font: 400 var(--text-caption)/1 var(--font-sans);
+  color: var(--muted);
+}
+
+.news-link {
+  text-decoration: none;
+  color: inherit;
+}
+
+.greeting-banner {
+  margin-bottom: var(--space-8);
+}
+
+.greeting-banner__title {
+  font: 700 var(--text-h2)/1.2 var(--font-sans);
+  margin-bottom: var(--space-4);
+}
+
+.greeting-banner__chip {
+  display: inline-block;
+  background: var(--pink-tint-50);
+  color: var(--pink-primary);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-pill);
+  font: 600 var(--text-label)/1.2 var(--font-sans);
+}
+
+.stat-card {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  margin-top: var(--space-4);
+}
+
+.stat-card__label {
+  font: 400 var(--text-body-sm)/1.4 var(--font-sans);
+  color: var(--muted-strong);
+  margin-bottom: var(--space-2);
+}
+
+.stat-card__value {
+  font: 700 var(--text-h1)/1.2 var(--font-sans);
+  color: var(--ink);
+  margin-bottom: var(--space-2);
+}
+
+.stat-card__comment {
+  font: 400 var(--text-caption)/1.4 var(--font-sans);
+  color: var(--muted);
+}
+
+.jobseeker-bottom-row {
+  display: flex;
+  gap: var(--space-6);
+  margin-top: var(--space-8);
+}
+
+.jobseeker-bottom-row__col {
+  flex: 1;
+}
+
+/* 구직자 대시보드 반응형 */
+@media (max-width: 1024px) {
+  .kanban-col { flex: 0 0 240px; }
+}
+
+@media (max-width: 768px) {
+  .jobseeker-container { flex-direction: column; }
+  .sidebar { flex: 1 1 auto; width: 100%; max-height: none; }
+  .kanban { flex-wrap: wrap; }
+  .kanban-col { flex: 0 0 calc(50% - (var(--space-3) / 2)); }
+  .jobseeker-bottom-row { flex-direction: column; }
 }
 
 /* 회원가입/로그인 완료 후 확인(환영) 모달 (js/welcome.js) */
@@ -662,12 +1053,6 @@ body.modal-open {
   width: 12px;
   height: 12px;
   border-radius: var(--radius-sm);
-}
-
-/* 채용 뉴스 카드 제목 링크 */
-.news-link {
-  text-decoration: none;
-  color: inherit;
 }
 
 /* 다크 표면 푸터 (DESIGN.md 2.3절: --ink는 footer 등 다크 표면에도 사용) */

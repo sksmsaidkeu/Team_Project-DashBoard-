@@ -1,11 +1,12 @@
 """
 scripts/_common.py
 
-세 스크립트(fetch_wanted_trend.py / generate_config.py / seed_categories.py)가
+네 스크립트(fetch_wanted_trend.py / seed_categories.py / import_wanted_data.py / generate_config.py)가
 공통으로 쓰던 .env 로더와 Supabase REST upsert 헬퍼를 한 곳에 모은 모듈.
-(REFACT.md P1-6) 각 스크립트는 이 파일을 `from _common import ...`로 가져다 쓴다.
-스크립트가 `python scripts/xxx.py`로 직접 실행되면 Python이 scripts/ 디렉터리를
-sys.path에 자동으로 추가하므로 별도 패키지 설정 없이 임포트된다.
+(common 브랜치 REFACT.md P1-6과 동일한 리팩터를 이 브랜치에도 적용) 각 스크립트는
+이 파일을 `from _common import ...`로 가져다 쓴다. 스크립트가 `python scripts/xxx.py`로
+직접 실행되면 Python이 scripts/ 디렉터리를 sys.path에 자동으로 추가하므로 별도
+패키지 설정 없이 임포트된다.
 """
 
 import json
