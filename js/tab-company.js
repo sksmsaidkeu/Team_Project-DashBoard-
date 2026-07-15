@@ -2,6 +2,7 @@ import { supabase } from './supabaseClient.js';
 import { getCurrentUserProfile } from './auth.js';
 import { fetchCategoriesByIds } from './categories.js';
 import { employmentTypeLabel } from './signup.js';
+import { resolveRegionFilterIds } from './utils.js';
 
 /**
  * Tab1(기업) 콘텐츠 최상단 하이라이트.
@@ -52,7 +53,8 @@ export async function renderCompanyHighlight(container) {
       query = query.eq('desired_position_category_id', company.position_category_id);
     }
     if (company.region_category_id) {
-      query = query.eq('region_category_id', company.region_category_id);
+      const regionIds = await resolveRegionFilterIds(company.region_category_id);
+      query = query.in('region_category_id', regionIds);
     }
 
     const { data: candidateRows, error: candidateError } = await query;

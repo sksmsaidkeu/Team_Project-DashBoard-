@@ -3,6 +3,9 @@
 .env.*
 !.env.example
 
+# Generated config (from .env via scripts/generate_config.py)
+/js/config.js
+
 # Persona files
 /persona/
 /personas/

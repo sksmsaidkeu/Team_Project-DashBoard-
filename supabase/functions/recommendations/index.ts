@@ -40,6 +40,26 @@ function clamp(n: number, min: number, max: number) {
   return Math.max(min, Math.min(max, n));
 }
 
+async function resolveRegionFilterIds(db: any, categoryId: string): Promise<string[]> {
+  const ids = [categoryId];
+  const queue = [categoryId];
+
+  while (queue.length > 0) {
+    const currentId = queue.shift()!;
+    const { data: children } = await db
+      .from("categories")
+      .select("id")
+      .eq("parent_id", currentId);
+
+    (children ?? []).forEach((child: any) => {
+      ids.push(child.id);
+      queue.push(child.id);
+    });
+  }
+
+  return ids;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -98,14 +118,19 @@ Deno.serve(async (req) => {
   const seenJobIds = new Set<string>();
   const scored: any[] = [];
 
+  // 거주 지역 필터: 선택 카테고리 + 하위 모든 카테고리 ID 수집
+  const regionIds = profile.region_category_id
+    ? new Set(await resolveRegionFilterIds(db, profile.region_category_id))
+    : new Set<string>();
+
   for (const row of candidates ?? []) {
     const job = (row as any).job_postings;
     if (!job || seenJobIds.has(job.id) || appliedJobIds.has(job.id)) continue;
     const company = job.company_profiles;
     if (!company) continue;
 
-    // 하드 필터: 거주 지역 일치
-    if (company.region_category_id !== profile.region_category_id) continue;
+    // 하드 필터: 거주 지역 일치 (선택 카테고리 또는 하위 카테고리)
+    if (profile.region_category_id && !regionIds.has(company.region_category_id)) continue;
 
     const companySkillIds: string[] = (company.company_profile_skills ?? []).map((s: any) => s.skill_category_id);
     const overlap = companySkillIds.filter((id) => jobseekerSkillIds.has(id));
