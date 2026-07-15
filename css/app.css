@@ -430,6 +430,13 @@
 
 .job-card__body { flex: 1; }
 
+/* 구직자 지원 현황 카드의 읽기 전용 단계 표시(2026-07-16) — 더 이상 select로 직접 바꿀 수 없다. */
+.job-stage-readonly {
+  margin: var(--space-2) 0 0;
+  font: 400 var(--text-body-sm)/1.4 var(--font-sans);
+  color: var(--muted-strong);
+}
+
 .empty-state {
   font: 400 var(--text-body-sm)/1.5 var(--font-sans);
   color: var(--muted-strong);

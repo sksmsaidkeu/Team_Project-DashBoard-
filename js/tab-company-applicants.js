@@ -1,9 +1,27 @@
+import { supabase } from './supabaseClient.js';
 import { apiClient, ApiError } from './api-client.js';
 import { getCurrentUserProfile } from './auth.js';
 import { fetchCategoriesByIds } from './categories.js';
 import { employmentTypeLabel } from './signup.js';
 
 const JOB_STATUS_LABEL = { draft: '임시저장', active: '게시중', close: '마감' };
+
+// jobseeker_applications.pipeline_stage/outcome 변경 옵션(jobseeker-dashboard.js와 동일 매핑).
+// 2026-07-16: 이 단계 변경은 이제 기업만 할 수 있다(RLS: jobseeker_applications_update_company,
+// migrations/20260716000000_jobseeker_applications_company_owns_stage.sql 참고) — 구직자는
+// 더 이상 자기 화면에서 직접 바꿀 수 없다.
+const STAGE_OPTIONS = [
+  { value: 'applied', label: '지원완료', pipeline_stage: 'applied', outcome: null },
+  { value: 'review', label: '서류심사', pipeline_stage: 'review', outcome: null },
+  { value: 'interview', label: '면접', pipeline_stage: 'interview', outcome: null },
+  { value: 'result_passed', label: '최종결과 · 합격', pipeline_stage: 'result', outcome: 'passed' },
+  { value: 'result_rejected', label: '최종결과 · 불합격', pipeline_stage: 'result', outcome: 'rejected' },
+];
+
+function stageOptionValue(pipelineStage, outcome) {
+  if (pipelineStage === 'result') return outcome === 'rejected' ? 'result_rejected' : 'result_passed';
+  return pipelineStage;
+}
 
 function formatDateTime(iso) {
   if (!iso) return '-';
@@ -18,11 +36,12 @@ function errMsg(err, fallback) {
 
 /**
  * Tab1(기업) 지원자 관리 서브탭.
- * GET /company/job-postings/{id}/applicants, POST .../applicants/{jobseeker_profile_id}/view
- * (backend/app/routers/applicants.py)
+ * 목록/열람 처리는 GET /company/job-postings/{id}/applicants, POST .../{jobseeker_profile_id}/view
+ * (backend/app/routers/applicants.py, interaction_logs의 APPLY/VIEW 로그 기반, DB.md 3.9절).
  *
- * 백엔드에 파이프라인 단계(서류심사/면접 등) 개념이 없고 interaction_logs의 APPLY/VIEW 로그만
- * 존재하므로(DB.md 3.9절), 칸반이 아니라 지원일시 순 목록 + 열람 처리 버튼으로만 구성한다.
+ * 지원 현황 단계(지원완료/서류심사/면접/최종결과)는 별도 테이블 jobseeker_applications에 있고
+ * 백엔드에는 이 개념이 없어서, 이 부분만 직접 Supabase(RLS: jobseeker_applications_update_company)
+ * 로 조회/변경한다 — jobseeker_profile_id로 위 목록과 조인한다(2026-07-16 추가).
  */
 export async function renderApplicantsPanel(container) {
   if (!container) return;
@@ -89,6 +108,33 @@ export async function renderApplicantsPanel(container) {
     const catMap = await fetchCategoriesByIds(Array.from(catIds));
     const title = (id) => (id && catMap[id] ? catMap[id].title : '-');
 
+    // 지원 현황 단계(jobseeker_applications)는 FastAPI(interaction_logs 기반) 목록과 별도
+    // 데이터소스라 jobseeker_profile_id로 조인한다. RLS가 이 공고를 등록한 기업 본인에게만
+    // 조회/수정을 허용한다(위 STAGE_OPTIONS 주석 참고).
+    const { data: applicationRows, error: applicationError } = await supabase
+      .from('jobseeker_applications')
+      .select('id, jobseeker_profile_id, pipeline_stage, outcome')
+      .eq('job_posting_id', jobPostingId);
+    if (applicationError) console.error('jobseeker_applications 조회 실패', applicationError);
+    const applicationByProfileId = new Map(
+      (applicationRows ?? []).map((row) => [row.jobseeker_profile_id, row]),
+    );
+
+    const stageCellHtml = (a) => {
+      const application = applicationByProfileId.get(a.jobseeker_profile_id);
+      if (!application) return '<span class="card__meta">지원 현황 트래커 미사용</span>';
+      const currentValue = stageOptionValue(application.pipeline_stage, application.outcome);
+      const optionsHtml = STAGE_OPTIONS
+        .map((o) => `<option value="${o.value}" ${o.value === currentValue ? 'selected' : ''}>${o.label}</option>`)
+        .join('');
+      return `
+        <label class="sr-only" for="application-stage-${application.id}">지원 현황 단계 변경</label>
+        <select class="form-select" id="application-stage-${application.id}" data-application-id="${application.id}">
+          ${optionsHtml}
+        </select>
+      `;
+    };
+
     const rows = applicants.map((a) => `
       <tr>
         <td>${title(a.desired_position_category_id)} · 경력 ${a.career_years}년</td>
@@ -102,6 +148,7 @@ export async function renderApplicantsPanel(container) {
         <td>${a.viewed
           ? '<span class="status-badge status-badge--viewed">열람함</span>'
           : '<span class="status-badge status-badge--unviewed">미열람</span>'}</td>
+        <td>${stageCellHtml(a)}</td>
         <td class="table-actions">
           ${a.viewed ? '' : `<button type="button" class="btn btn-ghost btn-sm" data-action="view" data-id="${a.jobseeker_profile_id}">열람 처리</button>`}
         </td>
@@ -114,7 +161,7 @@ export async function renderApplicantsPanel(container) {
           <thead>
             <tr>
               <th>직무/경력</th><th>지역</th><th>희망연봉</th><th>희망근무형태</th>
-              <th>스킬</th><th>지원일시</th><th>열람여부</th><th>액션</th>
+              <th>스킬</th><th>지원일시</th><th>열람여부</th><th>지원 현황 단계</th><th>액션</th>
             </tr>
           </thead>
           <tbody>${rows}</tbody>
@@ -132,6 +179,27 @@ export async function renderApplicantsPanel(container) {
           window.alert(errMsg(err, '열람 처리에 실패했습니다.'));
           btn.disabled = false;
         }
+      });
+    });
+
+    listArea.querySelectorAll('[data-application-id]').forEach((select) => {
+      select.addEventListener('change', async (e) => {
+        const applicationId = e.target.dataset.applicationId;
+        const option = STAGE_OPTIONS.find((o) => o.value === e.target.value);
+        if (!option) return;
+
+        e.target.disabled = true;
+        const { error } = await supabase
+          .from('jobseeker_applications')
+          .update({ pipeline_stage: option.pipeline_stage, outcome: option.outcome })
+          .eq('id', applicationId);
+
+        if (error) {
+          window.alert(`상태 변경에 실패했습니다: ${error.message}`);
+          e.target.disabled = false;
+          return;
+        }
+        await loadApplicants(jobPostingId);
       });
     });
   }

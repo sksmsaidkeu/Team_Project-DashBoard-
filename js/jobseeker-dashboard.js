@@ -13,7 +13,10 @@ import {
 // 예를 들어 news 테이블이 비어 있거나 한 API가 실패해도 나머지 섹션은 정상 렌더링되어야 한다.
 
 // DESIGN.md 5.7절 파이프라인 4단계 + 최종결과 확정 시 합격/불합격 분기.
-// 칸반 카드의 상태 변경 select는 이 5개 값 중 하나를 선택해 pipeline_stage/outcome을 함께 갱신한다.
+// 2026-07-16: 이 값들은 더 이상 구직자가 직접 바꿀 수 없다(회사가 채용 프로세스 단계를
+// 결정하는 게 맞다 — RLS도 구직자의 UPDATE 권한을 제거했다, migrations/
+// 20260716000000_jobseeker_applications_company_owns_stage.sql 참고). 여기서는 카드에
+// 현재 단계 라벨을 표시하는 용도로만 쓴다(읽기 전용).
 const STAGE_OPTIONS = [
   { value: 'applied', label: '지원완료', pipeline_stage: 'applied', outcome: null },
   { value: 'review', label: '서류심사', pipeline_stage: 'review', outcome: null },
@@ -164,27 +167,6 @@ function renderKanban(el, applicationsResult) {
       </div>
     `;
   }).join('');
-
-  el.querySelectorAll('[data-application-id]').forEach((select) => {
-    select.addEventListener('change', async (e) => {
-      const applicationId = e.target.dataset.applicationId;
-      const option = STAGE_OPTIONS.find((o) => o.value === e.target.value);
-      if (!option) return;
-
-      e.target.disabled = true;
-      const { error } = await supabase
-        .from('jobseeker_applications')
-        .update({ pipeline_stage: option.pipeline_stage, outcome: option.outcome })
-        .eq('id', applicationId);
-
-      if (error) {
-        window.alert(`상태 변경에 실패했습니다: ${error.message}`);
-        e.target.disabled = false;
-        return;
-      }
-      await renderJobseekerDashboard();
-    });
-  });
 }
 
 function renderCard(card, stageKey) {
@@ -192,10 +174,8 @@ function renderCard(card, stageKey) {
   const skillsHtml = (card.skills ?? [])
     .map((s) => `<span class="skill">${escapeHtml(s)}</span>`)
     .join('');
-  const selectValue = stageOptionValue(stageKey, card.outcome);
-  const optionsHtml = STAGE_OPTIONS
-    .map((o) => `<option value="${o.value}" ${o.value === selectValue ? 'selected' : ''}>${o.label}</option>`)
-    .join('');
+  const currentStageValue = stageOptionValue(stageKey, card.outcome);
+  const currentStageLabel = STAGE_OPTIONS.find((o) => o.value === currentStageValue)?.label ?? '';
 
   // DESIGN.md 7.2절: 합격/불합격처럼 색으로만 구분되는 상태는 배경색(job-card.success/.error)
   // 단독이 아니라 텍스트/아이콘 라벨을 항상 함께 표기한다(.job-footer/.status-badge, 색맹 대응).
@@ -214,10 +194,9 @@ function renderCard(card, stageKey) {
       <div class="job-date">${formatDate(card.applied_at)}</div>
       ${skillsHtml ? `<div class="job-skills">${skillsHtml}</div>` : ''}
       ${outcomeBadgeHtml}
-      <label class="sr-only" for="jobseeker-stage-${card.id}">진행 단계 변경</label>
-      <select class="form-select" id="jobseeker-stage-${card.id}" data-application-id="${card.id}">
-        ${optionsHtml}
-      </select>
+      <p class="job-stage-readonly">현재 단계: <strong>${escapeHtml(currentStageLabel)}</strong>
+        <span class="sr-only">(기업에서만 변경할 수 있습니다)</span>
+      </p>
     </div>
   `;
 }
