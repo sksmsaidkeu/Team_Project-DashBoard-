@@ -31,3 +31,5 @@ backend/scripts/data/
 
 # Personal local Claude Code agent team config (not shared with team)
 /.claude/
+.vercel
+.env*

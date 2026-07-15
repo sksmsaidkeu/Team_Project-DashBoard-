@@ -1,0 +1,6 @@
+backend/
+supabase/
+*.md
+.env
+.env.*
+!.env.example
