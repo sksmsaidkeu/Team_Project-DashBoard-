@@ -8,15 +8,12 @@ import { NEWS_API_KEY } from './config.js';
  * 이 프로젝트는 빌드 도구/배포된 백엔드 서버가 없는 정적 SPA이므로, 뉴스 API를 호출하려면
  * 브라우저에서 직접 fetch해야 한다.
  *
- * 실제 검증 결과 (2026-07 기준, 공식 문서/FAQ 및 실제 HTTP 응답 기준):
+ * 2026-07-16: NEWS_API_KEY는 NewsAPI.org 키를 쓴다(실제 발급받은 키로 검증 완료).
+ * 실제 검증 결과 (공식 pricing FAQ 및 실제 HTTP 응답 기준):
  * - NewsAPI.org 무료 "Developer" 플랜: 브라우저 직접 호출이 localhost로만 허용된다.
  *   공식 pricing FAQ에 명시된 에러 메시지: "Requests from the browser are not allowed on the
- *   Developer plan, except from localhost." 즉 프로덕션 도메인에서는 호출 자체가 차단된다.
- * - GNews.io 무료 플랜: pricing 페이지에 "CORS enabled for localhost"라고 명시되어 있고,
- *   무료 플랜은 상업적 프로젝트 이용이 약관상 금지되어 있다(비상업/개발·테스트 전용).
- *   실제로 Python에서 Origin 헤더를 넣어 요청해보면 Access-Control-Allow-Origin: * 를
- *   내려주는 것이 관찰되지만(브라우저 CORS 자체는 기술적으로 통과할 수 있음), 문서상 정책은
- *   "localhost/비상업용 전용"이라 프로덕션에 그대로 사용하는 것은 안전하지 않다.
+ *   Developer plan, except from localhost." 즉 프로덕션 도메인에서는 호출 자체가 차단된다
+ *   (로컬 개발/테스트에서는 정상 동작 — 실제로 curl로 확인함).
  *
  * 결론: 이 프로젝트(배포된 백엔드 서버 없음 — scripts/*.py는 로컬 1회성 스크립트일 뿐 상시
  * 프록시 서버가 아님)는 프로덕션에서 안전하게 뉴스 API를 직접 호출할 방법이 없다. 따라서
@@ -26,7 +23,7 @@ import { NEWS_API_KEY } from './config.js';
  * 그 프록시를 통해 호출하는 구조로 바꿔야 한다 (PRD.md 8장 참고).
  */
 
-const GNEWS_ENDPOINT = 'https://gnews.io/api/v4/search';
+const NEWSAPI_ENDPOINT = 'https://newsapi.org/v2/everything';
 const NEWS_QUERY = '채용 OR 이직 OR 구직'; // 국내 채용 시장 관련 키워드
 const FETCH_TIMEOUT_MS = 5000;
 
@@ -48,7 +45,7 @@ function withTimeout(promise, ms) {
   ]);
 }
 
-function mapGNewsArticle(article) {
+function mapNewsApiArticle(article) {
   return {
     title: article.title || '(제목 없음)',
     date: (article.publishedAt || '').slice(0, 10) || '-',
@@ -62,7 +59,7 @@ function mapGNewsArticle(article) {
  *
  * 동작:
  * 1. NEWS_API_KEY(js/config.js, .env의 NEWS_API_KEY로부터 생성)가 비어 있으면 즉시 fallbackItems 반환.
- * 2. 키가 있으면 GNews.io 검색 API 호출을 시도한다.
+ * 2. 키가 있으면 NewsAPI.org 검색 API 호출을 시도한다.
  * 3. 네트워크 오류/CORS 차단/타임아웃/API 에러 응답 등 어떤 이유로든 실패하면 예외를 던지지 않고
  *    fallbackItems로 대체한다 (graceful degradation) — 호출부는 항상 렌더링 가능한 배열을 받는다.
  *
@@ -76,7 +73,7 @@ export async function fetchJobNews(fallbackItems = DEFAULT_FALLBACK_NEWS) {
   }
 
   try {
-    const url = `${GNEWS_ENDPOINT}?q=${encodeURIComponent(NEWS_QUERY)}&lang=ko&max=5&apikey=${encodeURIComponent(NEWS_API_KEY)}`;
+    const url = `${NEWSAPI_ENDPOINT}?q=${encodeURIComponent(NEWS_QUERY)}&language=ko&pageSize=5&sortBy=publishedAt&apiKey=${encodeURIComponent(NEWS_API_KEY)}`;
     const response = await withTimeout(fetch(url), FETCH_TIMEOUT_MS);
     if (!response.ok) {
       throw new Error(`news api HTTP ${response.status}`);
@@ -86,7 +83,7 @@ export async function fetchJobNews(fallbackItems = DEFAULT_FALLBACK_NEWS) {
     if (articles.length === 0) {
       return fallbackItems;
     }
-    return articles.map(mapGNewsArticle);
+    return articles.map(mapNewsApiArticle);
   } catch (err) {
     // CORS 차단, 네트워크 오류, 타임아웃, 쿼터 초과 등 사유 불문 폴백.
     console.warn('[news] 외부 뉴스 API 호출 실패, 정적 폴백 뉴스로 대체합니다:', err);
