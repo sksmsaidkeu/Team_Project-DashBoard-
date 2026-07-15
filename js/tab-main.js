@@ -237,7 +237,9 @@ export async function renderRecentTalent(container) {
 /* 4. 채용 뉴스 (PRD 8장: 임시 수동 큐레이션, 추후 실제 뉴스 소스로 교체) */
 /* ------------------------------------------------------------------ */
 
-const JOB_NEWS_ITEMS = [
+// jobseeker-dashboard.js(Tab2)도 이 큐레이션 목록을 fetchJobNews()의 폴백으로 재사용한다
+// (2026-07-16) — 같은 뉴스 소스/폴백 패턴을 두 화면이 공유한다.
+export const JOB_NEWS_ITEMS = [
   {
     title: '2026년 상반기 IT 개발직군 채용, 전년 대비 소폭 회복세',
     date: '2026-07-01',

@@ -5,12 +5,18 @@ import {
   getInsights,
   getTrendingSkills,
   getRecommendations,
-  getNews,
 } from './api/jobseeker.js';
+import { fetchJobNews } from './news.js';
+import { JOB_NEWS_ITEMS } from './tab-main.js';
 
 // FEATURE_JOBSEEKER.md #6~10: Tab2 대시보드(칸반/인사이트/핫스킬/추천공고/뉴스/인사배너)를
 // 실 데이터로 렌더링한다. 각 섹션은 독립적으로 성공/실패를 표시한다(Promise.allSettled) —
-// 예를 들어 news 테이블이 비어 있거나 한 API가 실패해도 나머지 섹션은 정상 렌더링되어야 한다.
+// 예를 들어 한 API가 실패해도 나머지 섹션은 정상 렌더링되어야 한다.
+//
+// 뉴스는 원래 supabase/functions/news(수동 등록 news 테이블) 기반이었는데 테이블이 계속
+// 비어 있어 항상 빈 상태였다. 메인 탭(js/tab-main.js)이 이미 쓰고 있는 js/news.js의
+// fetchJobNews()(GNews.io 실 API 시도 + 실패/키 없음 시 정적 큐레이션 폴백)로 교체한다
+// (2026-07-16, "메인 탭에서 정상 작동하는 뉴스를 가져와 달라"는 요청).
 
 // DESIGN.md 5.7절 파이프라인 4단계 + 최종결과 확정 시 합격/불합격 분기.
 // 2026-07-16: 이 값들은 더 이상 구직자가 직접 바꿀 수 없다(회사가 채용 프로세스 단계를
@@ -62,14 +68,6 @@ function formatDate(iso) {
   return `${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
 }
 
-function formatRelativeTime(iso) {
-  if (!iso) return '';
-  const hours = Math.floor((Date.now() - new Date(iso).getTime()) / 3_600_000);
-  if (hours < 1) return '방금 전';
-  if (hours < 24) return `${hours}시간 전`;
-  return `${Math.floor(hours / 24)}일 전`;
-}
-
 function formatStatValue(stat) {
   if (stat.label === '합격률') return `${stat.value}%`;
   return `${stat.value}건`;
@@ -114,7 +112,7 @@ export async function renderJobseekerDashboard() {
       getInsights(),
       getTrendingSkills(),
       getRecommendations(),
-      getNews(),
+      fetchJobNews(JOB_NEWS_ITEMS),
     ]);
 
   const displayName = nameResult.status === 'fulfilled' ? nameResult.value.data?.name ?? null : null;
@@ -292,12 +290,14 @@ function renderRecommendations(el, recommendationsResult, jobseekerProfileId) {
 
 function renderNews(el, newsResult) {
   if (!el) return;
+  // fetchJobNews()는 실패해도 예외를 던지지 않고 폴백 배열을 반환하므로(js/news.js 참고),
+  // 실무적으로 newsResult는 거의 항상 'fulfilled'다 — 그래도 방어적으로 상태를 확인한다.
   if (newsResult.status !== 'fulfilled') {
     el.innerHTML = '<p class="empty-state">뉴스를 불러오지 못했습니다.</p>';
     return;
   }
 
-  const items = newsResult.value.items ?? [];
+  const items = newsResult.value ?? [];
   if (items.length === 0) {
     el.innerHTML = '<p class="empty-state">등록된 뉴스가 없습니다.</p>';
     return;
@@ -306,7 +306,7 @@ function renderNews(el, newsResult) {
   el.innerHTML = items.map((item) => `
     <div class="news-item">
       <a class="news-title" href="${safeHref(item.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(item.title)}</a>
-      <div class="news-source">${escapeHtml(item.source)} · ${formatRelativeTime(item.published_at)}</div>
+      <div class="news-source">${escapeHtml(formatDate(item.date))}${item.summary ? ` · ${escapeHtml(item.summary)}` : ''}</div>
     </div>
   `).join('');
 }
