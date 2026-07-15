@@ -6,11 +6,13 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 // 1) 하드 필터: status='active' AND 희망 직무 일치(job_posting_position_details, depth2
 //    "직무"가 jobseeker_profiles.desired_position_category_id와 동일 — company_profiles의
 //    position_category_id 주석과 동일한 depth 개념이라 판단) AND 희망 고용형태 일치
-//    AND 거주 지역 일치(company_profiles.region_category_id) AND 보유 스킬 1개 이상 일치.
+//    AND 보유 스킬 1개 이상 일치.
+//    2026-07-16: 거주 지역 하드 필터는 제거했다 — 회사 수(41개)가 적어 지역까지 완전
+//    일치를 요구하면 스킬/직무가 잘 맞아도 추천이 거의 항상 0건으로 나왔다("스킬 위주로
+//    추천공고를 보여달라"는 요청). location은 여전히 응답에 표시용으로만 내려준다.
 // 2) 소프트 스코어링(0~100): 스킬 40% + 직무 25%(하드필터로 이미 일치하므로 고정 100) +
-//    지역·연봉 15%(지역은 하드필터로 고정 일치, 연봉은 desired_salary와
-//    company_profiles.average_salary 근접도) + 활동성 10%(interaction_logs 상호작용 빈도) +
-//    최신성 10%(posted_at 경과일).
+//    연봉 15%(desired_salary와 company_profiles.average_salary 근접도) + 활동성 10%
+//    (interaction_logs 상호작용 빈도) + 최신성 10%(posted_at 경과일).
 // 3) 정렬: 점수 내림차순.
 //
 // salary_range는 원티드 공고 스키마에 급여 필드가 없어(DB.md 1.1절) company_profiles의
@@ -38,42 +40,6 @@ async function getAuthedUser(req: Request) {
 
 function clamp(n: number, min: number, max: number) {
   return Math.max(min, Math.min(max, n));
-}
-
-// 2026-07-16 수정: 구직자가 읍면동(REGION depth 3, 리프 노드)까지 선택하면 하위 확장으로는
-// 같은 구/시 안의 "다른 동" 회사(형제 노드)를 절대 못 잡는다(실사례: "원천동" 구직자가
-// "매탄동" 회사를 못 봄 — 둘 다 "수원시 영통구" 소속인데도). 먼저 depth 2(시군구) 이하로
-// 조상을 타고 올라간 뒤(이미 depth 2 이하면 그대로) 거기서부터 하위 전체를 모아, 실질적으로
-// 시군구 단위까지만 매칭하고 읍면동 단위 구분은 무시한다.
-async function resolveRegionFilterIds(db: any, categoryId: string): Promise<string[]> {
-  let anchorId = categoryId;
-  for (let i = 0; i < 5; i += 1) {
-    const { data: current } = await db
-      .from("categories")
-      .select("depth, parent_id")
-      .eq("id", anchorId)
-      .maybeSingle();
-    if (!current || current.depth <= 2 || !current.parent_id) break;
-    anchorId = current.parent_id;
-  }
-
-  const ids = [anchorId];
-  const queue = [anchorId];
-
-  while (queue.length > 0) {
-    const currentId = queue.shift()!;
-    const { data: children } = await db
-      .from("categories")
-      .select("id")
-      .eq("parent_id", currentId);
-
-    (children ?? []).forEach((child: any) => {
-      ids.push(child.id);
-      queue.push(child.id);
-    });
-  }
-
-  return ids;
 }
 
 Deno.serve(async (req) => {
@@ -134,19 +100,11 @@ Deno.serve(async (req) => {
   const seenJobIds = new Set<string>();
   const scored: any[] = [];
 
-  // 거주 지역 필터: 선택 카테고리 + 하위 모든 카테고리 ID 수집
-  const regionIds = profile.region_category_id
-    ? new Set(await resolveRegionFilterIds(db, profile.region_category_id))
-    : new Set<string>();
-
   for (const row of candidates ?? []) {
     const job = (row as any).job_postings;
     if (!job || seenJobIds.has(job.id) || appliedJobIds.has(job.id)) continue;
     const company = job.company_profiles;
     if (!company) continue;
-
-    // 하드 필터: 거주 지역 일치 (선택 카테고리 또는 하위 카테고리)
-    if (profile.region_category_id && !regionIds.has(company.region_category_id)) continue;
 
     const companySkillIds: string[] = (company.company_profile_skills ?? []).map((s: any) => s.skill_category_id);
     const overlap = companySkillIds.filter((id) => jobseekerSkillIds.has(id));
