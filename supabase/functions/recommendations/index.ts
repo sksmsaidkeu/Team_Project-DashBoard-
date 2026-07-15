@@ -40,9 +40,25 @@ function clamp(n: number, min: number, max: number) {
   return Math.max(min, Math.min(max, n));
 }
 
+// 2026-07-16 수정: 구직자가 읍면동(REGION depth 3, 리프 노드)까지 선택하면 하위 확장으로는
+// 같은 구/시 안의 "다른 동" 회사(형제 노드)를 절대 못 잡는다(실사례: "원천동" 구직자가
+// "매탄동" 회사를 못 봄 — 둘 다 "수원시 영통구" 소속인데도). 먼저 depth 2(시군구) 이하로
+// 조상을 타고 올라간 뒤(이미 depth 2 이하면 그대로) 거기서부터 하위 전체를 모아, 실질적으로
+// 시군구 단위까지만 매칭하고 읍면동 단위 구분은 무시한다.
 async function resolveRegionFilterIds(db: any, categoryId: string): Promise<string[]> {
-  const ids = [categoryId];
-  const queue = [categoryId];
+  let anchorId = categoryId;
+  for (let i = 0; i < 5; i += 1) {
+    const { data: current } = await db
+      .from("categories")
+      .select("depth, parent_id")
+      .eq("id", anchorId)
+      .maybeSingle();
+    if (!current || current.depth <= 2 || !current.parent_id) break;
+    anchorId = current.parent_id;
+  }
+
+  const ids = [anchorId];
+  const queue = [anchorId];
 
   while (queue.length > 0) {
     const currentId = queue.shift()!;

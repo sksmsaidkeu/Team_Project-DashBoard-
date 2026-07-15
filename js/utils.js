@@ -29,12 +29,35 @@ export function tabForRole(role, fallback = 'main') {
  * in() 쿼리로 사용할 ID 배열을 생성한다.
  *
  * 예: 서울 (depth 1) 선택 → [서울 id, 강남구 id, 강남구-논현동 id, ...] 모두 수집
+ *
+ * 2026-07-16 수정: 구직자가 읍면동(REGION depth 3, 리프 노드)까지 선택하면 하위로 확장할
+ * 자식이 없어 자기 자신 하나만 남는다 — 그러면 같은 구/시 안의 "다른 동" 회사(형제 노드,
+ * 하위 확장으로는 절대 못 잡음)를 전부 놓친다(실제 사례: "원천동" 선택 구직자가 "매탄동"
+ * 회사 — 둘 다 "수원시 영통구" 밑인데 매칭 실패). 그래서 먼저 depth 2(시군구) 이하로
+ * 조상을 타고 올라간 뒤(이미 depth 2 이하면 그대로 둠) 거기서부터 하위 전체를 모은다 —
+ * 실질적으로 "시군구" 단위까지만 매칭하고 읍면동 단위 구분은 무시한다(대부분의 채용
+ * 플랫폼도 이 정도 granularity로 지역을 다룬다).
  */
 export async function resolveRegionFilterIds(categoryId) {
   if (!categoryId) return [];
 
-  const ids = [categoryId];
-  const queue = [categoryId];
+  let anchorId = categoryId;
+  for (let i = 0; i < 5; i += 1) {
+    const { data: current, error } = await supabase
+      .from('categories')
+      .select('depth, parent_id')
+      .eq('id', anchorId)
+      .maybeSingle();
+    if (error) {
+      console.error('resolveRegionFilterIds anchor lookup error', error);
+      break;
+    }
+    if (!current || current.depth <= 2 || !current.parent_id) break;
+    anchorId = current.parent_id;
+  }
+
+  const ids = [anchorId];
+  const queue = [anchorId];
 
   while (queue.length > 0) {
     const currentId = queue.shift();
