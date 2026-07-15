@@ -13,3 +13,10 @@
 # OpenAPI spec files
 openapi (1).json
 openapi.json
+
+# scripts/import_wanted_data.py 중간 산출물(원티드 API 실호출 결과, 재실행마다 달라짐)
+/scripts/data/
+
+# Python 캐시
+__pycache__/
+*.pyc
