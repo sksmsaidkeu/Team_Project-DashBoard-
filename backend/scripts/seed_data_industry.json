@@ -1,0 +1,38 @@
+{
+  "_source": "통계청 한국표준산업분류(KSIC) 10차 개정. 대분류(섹션 A~U)는 통계청 통계분류포털(kssc.kostat.go.kr) 공개 분류체계, 중/소분류 코드·명칭은 https://github.com/FinanceData/KSIC 의 KSIC_10.csv.gz(공식 고시 기반 공개 데이터)에서 실제 값을 추출했다. placeholder가 아니라 실제 KSIC 코드다. 전체 산업(2000여 개 소분류) 중 대표 6개 섹션만 선정한 샘플이다.",
+  "section": [
+    { "title": "제조업", "industry_code": "C" },
+    { "title": "정보통신업", "industry_code": "J" },
+    { "title": "도매 및 소매업", "industry_code": "G" },
+    { "title": "전문, 과학 및 기술 서비스업", "industry_code": "M" },
+    { "title": "건설업", "industry_code": "F" },
+    { "title": "금융 및 보험업", "industry_code": "K" }
+  ],
+  "division": [
+    { "ksic_code": "26", "title": "전자 부품, 컴퓨터, 영상, 음향 및 통신장비 제조업", "industry_code": "C", "parent_section_industry_code": "C" },
+    { "ksic_code": "62", "title": "컴퓨터 프로그래밍, 시스템 통합 및 관리업", "industry_code": "J", "parent_section_industry_code": "J" },
+    { "ksic_code": "63", "title": "정보서비스업", "industry_code": "J", "parent_section_industry_code": "J" },
+    { "ksic_code": "45", "title": "자동차 및 부품 판매업", "industry_code": "G", "parent_section_industry_code": "G" },
+    { "ksic_code": "70", "title": "연구개발업", "industry_code": "M", "parent_section_industry_code": "M" },
+    { "ksic_code": "41", "title": "종합 건설업", "industry_code": "F", "parent_section_industry_code": "F" },
+    { "ksic_code": "64", "title": "금융업", "industry_code": "K", "parent_section_industry_code": "K" }
+  ],
+  "class": [
+    { "ksic_code": "261", "title": "반도체 제조업", "industry_code": "C", "parent_ksic_code": "26" },
+    { "ksic_code": "262", "title": "전자 부품 제조업", "industry_code": "C", "parent_ksic_code": "26" },
+    { "ksic_code": "263", "title": "컴퓨터 및 주변 장치 제조업", "industry_code": "C", "parent_ksic_code": "26" },
+    { "ksic_code": "620", "title": "컴퓨터 프로그래밍, 시스템 통합 및 관리업", "industry_code": "J", "parent_ksic_code": "62" },
+    { "ksic_code": "631", "title": "자료 처리, 호스팅, 포털 및 기타 인터넷 정보 매개 서비스업", "industry_code": "J", "parent_ksic_code": "63" },
+    { "ksic_code": "639", "title": "기타 정보 서비스업", "industry_code": "J", "parent_ksic_code": "63" },
+    { "ksic_code": "451", "title": "자동차 판매업", "industry_code": "G", "parent_ksic_code": "45" },
+    { "ksic_code": "452", "title": "자동차 부품 및 내장품 판매업", "industry_code": "G", "parent_ksic_code": "45" },
+    { "ksic_code": "453", "title": "모터사이클 및 부품 판매업", "industry_code": "G", "parent_ksic_code": "45" },
+    { "ksic_code": "701", "title": "자연과학 및 공학 연구개발업", "industry_code": "M", "parent_ksic_code": "70" },
+    { "ksic_code": "702", "title": "인문 및 사회과학 연구개발업", "industry_code": "M", "parent_ksic_code": "70" },
+    { "ksic_code": "411", "title": "건물 건설업", "industry_code": "F", "parent_ksic_code": "41" },
+    { "ksic_code": "412", "title": "토목 건설업", "industry_code": "F", "parent_ksic_code": "41" },
+    { "ksic_code": "641", "title": "은행 및 저축기관", "industry_code": "K", "parent_ksic_code": "64" },
+    { "ksic_code": "642", "title": "신탁업 및 집합 투자업", "industry_code": "K", "parent_ksic_code": "64" },
+    { "ksic_code": "649", "title": "기타 금융업", "industry_code": "K", "parent_ksic_code": "64" }
+  ]
+}

@@ -1,0 +1,577 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>채용 플랫폼</title>
+
+  <link rel="stylesheet" as="style" crossorigin
+    href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@latest/dist/web/variable/pretendardvariable.css" />
+  <link rel="stylesheet" href="css/tokens.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <link rel="stylesheet" href="css/app.css" />
+</head>
+<body>
+  <!-- index.html을 file://로 직접 열면 <script type="module">이 브라우저 CORS 정책으로 차단되어
+       모든 JS(탭 전환/로그인/검색 등)가 조용히 동작하지 않는다. 이를 눈에 보이게 알려주는 안전장치.
+       (일반 <script>라 module 차단과 무관하게 항상 실행된다) -->
+  <script>
+    if (location.protocol === 'file:') {
+      document.write(
+        '<div id="file-protocol-warning" style="background:#E85C5C;color:#fff;padding:12px 20px;font:600 14px sans-serif;text-align:center">' +
+        '이 페이지는 파일을 더블클릭해서 열면 정상 동작하지 않습니다. 로컬 서버로 띄워서' +
+        ' (예: <code>python -m http.server</code> 실행 후 http://localhost:8000/index.html 접속) 열어주세요.' +
+        '</div>'
+      );
+    }
+  </script>
+  <a class="skip-link" href="#main-content">본문 바로가기</a>
+
+  <header class="site-header">
+    <div class="site-header__inner">
+      <a class="logo" href="#" data-tab="start">채용 플랫폼</a>
+
+      <nav class="tabs" role="tablist" aria-label="주요 화면 전환">
+        <button class="tab" role="tab" id="tab-btn-start" aria-selected="true" aria-controls="panel-start" data-tab="start">시작</button>
+        <button class="tab" role="tab" id="tab-btn-main" aria-selected="false" aria-controls="panel-main" data-tab="main">메인</button>
+        <button class="tab" role="tab" id="tab-btn-company" aria-selected="false" aria-controls="panel-company" data-tab="company">기업(Tab1)</button>
+        <button class="tab" role="tab" id="tab-btn-jobseeker" aria-selected="false" aria-controls="panel-jobseeker" data-tab="jobseeker">구직자(Tab2)</button>
+      </nav>
+
+      <div class="auth-bar" id="auth-bar"></div>
+    </div>
+  </header>
+
+  <main id="main-content" class="app-main">
+
+    <!-- 시작 (로그인 이전 랜딩) -->
+    <section id="panel-start" class="tab-panel" role="tabpanel" aria-labelledby="tab-btn-start">
+
+      <!-- 히어로 -->
+      <div class="hero">
+        <div class="hero__content">
+          <span class="hero__eyebrow">업종 · 직무 · 스킬 · 지역 기반 매칭</span>
+          <h1 class="page-title hero__title">조건이 맞는 채용, 더 빠르게 연결됩니다</h1>
+          <p class="page-lead">
+            채용 플랫폼은 자유 입력 대신 표준 카테고리로 기업과 구직자를 정밀하게 매칭합니다.
+            기업은 조건에 맞는 인재를 찾고, 구직자는 꼭 맞는 공고를 만납니다.
+          </p>
+          <div class="hero__actions">
+            <button type="button" class="btn btn-primary" id="signup-entry-btn">회원가입 시작하기</button>
+            <span class="hero__hint">이미 계정이 있다면 오른쪽 위에서 로그인하세요.</span>
+          </div>
+        </div>
+
+        <div class="hero__visual" aria-hidden="true">
+          <div class="card hero__preview-card">
+            <div class="talent-card__head">
+              <div class="match-score match-score--matched">
+                <span class="match-score__value">일치</span>
+              </div>
+              <div>
+                <p class="card__title">프론트엔드 개발자 · 경력 3년</p>
+                <p class="card__meta">서울 · 정규직 · 희망연봉 5,000만원</p>
+              </div>
+            </div>
+            <div class="tag-row">
+              <span class="tag">React</span>
+              <span class="tag">TypeScript</span>
+              <span class="tag">Next.js</span>
+            </div>
+          </div>
+          <div class="hero__preview-chip">조건 일치 인재 12명</div>
+        </div>
+      </div>
+
+      <!-- 핵심 기능 -->
+      <section class="landing-section" aria-labelledby="landing-features-title">
+        <div class="landing-section__head">
+          <h2 id="landing-features-title" class="landing-section__title">핵심 기능</h2>
+          <p class="landing-section__lead">카테고리로 좁힌 조건이 곧바로 매칭 결과가 됩니다.</p>
+        </div>
+        <div class="feature-grid">
+          <article class="card feature-card">
+            <span class="feature-card__icon" aria-hidden="true">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            </span>
+            <h3 class="card__title">카테고리 기반 정밀 매칭</h3>
+            <p class="card__meta">업종·직무·스킬·지역 표준 카테고리로 조건을 좁혀 노이즈 없는 결과를 제공합니다.</p>
+          </article>
+          <article class="card feature-card">
+            <span class="feature-card__icon" aria-hidden="true">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </span>
+            <h3 class="card__title">인재 검색 · 공고 관리</h3>
+            <p class="card__meta">기업은 조건에 맞는 인재를 검색하고, 채용공고와 지원자를 한곳에서 관리합니다.</p>
+          </article>
+          <article class="card feature-card">
+            <span class="feature-card__icon" aria-hidden="true">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            </span>
+            <h3 class="card__title">채용 시장 분석</h3>
+            <p class="card__meta">직무·업종별 공고 추이와 연봉·경력 지표로 채용 시장의 흐름을 확인합니다.</p>
+          </article>
+          <article class="card feature-card">
+            <span class="feature-card__icon" aria-hidden="true">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+            </span>
+            <h3 class="card__title">맞춤 공고 · 간편 지원</h3>
+            <p class="card__meta">구직자는 희망 직무·지역·근무형태에 맞춘 공고를 열람하고 바로 지원합니다.</p>
+          </article>
+        </div>
+      </section>
+
+      <!-- 두 사용자 유형 -->
+      <section class="landing-section" aria-labelledby="landing-audience-title">
+        <div class="landing-section__head">
+          <h2 id="landing-audience-title" class="landing-section__title">누구를 위한 서비스인가요?</h2>
+          <p class="landing-section__lead">가입 시 역할을 한 번 선택하면 그에 맞는 화면이 준비됩니다.</p>
+        </div>
+        <div class="audience-grid">
+          <article class="card audience-card">
+            <span class="audience-card__tag">기업</span>
+            <h3 class="card__title">조건에 맞는 인재를 먼저 찾고 싶다면</h3>
+            <ul class="audience-card__list">
+              <li>조건 기반 인재 검색과 매칭 점수 확인</li>
+              <li>채용공고 등록 · 게시 · 마감 관리</li>
+              <li>공고별 지원자 관리와 열람 처리</li>
+              <li>직무·업종별 채용 시장 분석</li>
+            </ul>
+          </article>
+          <article class="card audience-card">
+            <span class="audience-card__tag audience-card__tag--seeker">구직자</span>
+            <h3 class="card__title">나에게 꼭 맞는 공고를 만나고 싶다면</h3>
+            <ul class="audience-card__list">
+              <li>희망 직무·지역·근무형태 기반 맞춤 공고</li>
+              <li>조건이 일치하는 공고 추천</li>
+              <li>관심 기업에 간편 지원</li>
+              <li>연봉·지역 공개 여부 직접 설정</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <!-- 이용 흐름 -->
+      <section class="landing-section" aria-labelledby="landing-flow-title">
+        <div class="landing-section__head">
+          <h2 id="landing-flow-title" class="landing-section__title">이용 흐름</h2>
+          <p class="landing-section__lead">세 단계면 매칭을 시작할 수 있습니다.</p>
+        </div>
+        <ol class="flow-steps">
+          <li class="flow-step">
+            <span class="flow-step__num" aria-hidden="true">1</span>
+            <div>
+              <h3 class="card__title">가입</h3>
+              <p class="card__meta">이메일과 비밀번호로 별도 인증 없이 바로 가입합니다.</p>
+            </div>
+          </li>
+          <li class="flow-step">
+            <span class="flow-step__num" aria-hidden="true">2</span>
+            <div>
+              <h3 class="card__title">역할 선택</h3>
+              <p class="card__meta">기업 또는 구직자를 선택합니다. 가입 후에는 전환할 수 없습니다.</p>
+            </div>
+          </li>
+          <li class="flow-step">
+            <span class="flow-step__num" aria-hidden="true">3</span>
+            <div>
+              <h3 class="card__title">매칭 시작</h3>
+              <p class="card__meta">등록한 카테고리 조건으로 인재와 공고가 바로 연결됩니다.</p>
+            </div>
+          </li>
+        </ol>
+      </section>
+
+      <!-- 회원 전용 "메인" 대시보드 홍보 — 실제 데이터는 노출하지 않고 어떤 걸 볼 수 있는지만 미리보기 형태로 소개한다.
+           "메인" 탭은 로그인 회원 전용이라(회원 유인 전략), 비로그인 방문자는 여기서만 그 가치를 미리 확인할 수 있다. -->
+      <section class="landing-section" aria-labelledby="landing-dashboard-title">
+        <div class="landing-section__head">
+          <h2 id="landing-dashboard-title" class="landing-section__title">가입하면 "메인" 탭에서 이런 걸 볼 수 있어요</h2>
+          <p class="landing-section__lead">회원가입만 하면 바로 열리는 나만의 채용 대시보드입니다.</p>
+        </div>
+        <div class="feature-grid">
+          <article class="card feature-card">
+            <span class="feature-card__icon" aria-hidden="true">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            </span>
+            <h3 class="card__title">실시간 채용 트렌드</h3>
+            <p class="card__meta">우리 플랫폼과 원티드 실공고 기준으로 직군별 채용 동향을 확인하세요.</p>
+          </article>
+          <article class="card feature-card">
+            <span class="feature-card__icon" aria-hidden="true">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            </span>
+            <h3 class="card__title">스킬 수요 랭킹</h3>
+            <p class="card__meta">지금 가장 필요로 하는 스킬과 자주 함께 요구되는 조합을 랭킹으로 보여드려요.</p>
+          </article>
+          <article class="card feature-card">
+            <span class="feature-card__icon" aria-hidden="true">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+            </span>
+            <h3 class="card__title">맞춤 추천 하이라이트</h3>
+            <p class="card__meta">기업이면 조건에 맞는 인재를, 구직자면 딱 맞는 공고를 바로 확인할 수 있어요.</p>
+          </article>
+          <article class="card feature-card">
+            <span class="feature-card__icon" aria-hidden="true">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+            </span>
+            <h3 class="card__title">채용 뉴스</h3>
+            <p class="card__meta">채용 시장 소식과 최근 공고/인재 현황을 한 화면에서 확인하세요.</p>
+          </article>
+        </div>
+      </section>
+
+      <!-- 하단 CTA -->
+      <div class="landing-cta">
+        <h2 class="landing-cta__title">지금 바로 조건에 맞는 채용을 시작하세요</h2>
+        <button type="button" class="btn btn-primary" data-goto-signup>회원가입 시작하기</button>
+      </div>
+    </section>
+
+    <!-- 메인 (로그인 회원 전용 종합 대시보드) -->
+    <section id="panel-main" class="tab-panel" role="tabpanel" aria-labelledby="tab-btn-main" hidden>
+
+      <!-- 비로그인 방문자에게 보이는 가입 유도 게이트. js/app.js가 세션 유무로 이 블록과 main-dashboard의 hidden을 토글한다. -->
+      <div id="main-member-gate" class="landing-section">
+        <div class="landing-section__head">
+          <h2 class="landing-section__title">회원님만을 위한 대시보드예요</h2>
+          <p class="landing-section__lead">
+            로그인하면 실시간 채용 트렌드 · 스킬 수요 랭킹 · 맞춤 추천 하이라이트 · 채용 뉴스를 한 화면에서 확인할 수 있어요.
+          </p>
+        </div>
+        <button type="button" class="btn btn-primary" data-goto-signup>회원가입하고 대시보드 보기</button>
+      </div>
+
+      <!-- 로그인 회원에게만 보이는 실제 대시보드(common 브랜치 이식분, 2026-07-14). -->
+      <div id="main-dashboard" hidden>
+
+      <!-- Group A(진입): 히어로 검색 + 역할 선택 CTA — DESIGN.md 4.1절 -->
+      <!-- 히어로: 통합 검색 -->
+      <section class="hero">
+        <h1 class="page-title">카테고리 기반으로, 꼭 맞는 채용을 찾다</h1>
+        <p class="page-lead">
+          상단 탭에서 기업/구직자 화면으로 이동할 수 있습니다. 아래에서 직무·지역·스킬로 바로 검색해보세요.
+        </p>
+
+        <form id="hero-search-form" class="hero-search" role="search">
+          <label class="sr-only" for="hero-search-job">직무로 필터</label>
+          <select id="hero-search-job" class="form-select hero-search__select">
+            <option value="">직무 전체</option>
+          </select>
+          <label class="sr-only" for="hero-search-region">지역으로 필터</label>
+          <select id="hero-search-region" class="form-select hero-search__select">
+            <option value="">지역 전체</option>
+          </select>
+          <label class="sr-only" for="hero-search-input">스킬, 회사명으로 검색</label>
+          <input
+            type="search"
+            id="hero-search-input"
+            class="form-input hero-search__input"
+            placeholder="스킬, 회사명으로 검색"
+          />
+          <button type="submit" class="btn btn-primary">검색</button>
+        </form>
+      </section>
+
+      <!-- Group B: 시장 인사이트 컨테이너 (DESIGN.md 4.1절 그룹핑 원칙).
+           자체 채용 트렌드 + 원티드 실시간 동향 + 스킬 랭킹 + 스킬 조합, 4개 섹션 모두 파이차트이자
+           "시장 통계" 성격이라 하나의 시각적 컨테이너(배경 wash + 보더)로 묶고, 내부는 2x2 그리드로
+           배치해 한 화면에서 바로 비교할 수 있게 한다(2차 수정, 2026-07-15).
+           정보량/순서/각 섹션의 출처 라벨("우리 플랫폼 기준" / "원티드 제공")은 그대로 유지 —
+           묶는 것은 시각적 그룹핑뿐, 데이터 출처 구분은 지운 게 아니다(편향/데이터 왜곡 방지). -->
+      <section class="section-group" aria-label="시장 데이터 섹션 그룹">
+        <p class="section-group__overline" aria-hidden="true">시장 데이터</p>
+
+        <div class="section-group__grid">
+          <!-- 채용 트렌드 (다른 에이전트가 내용을 채울 빈 컨테이너). 아래 "실시간 채용 시장 동향"(원티드 실제 공고 데이터)과
+               출처가 다르므로 헤딩에 구분 문구를 병기한다. -->
+          <div class="section-group__item">
+            <h2 class="text-h2" id="main-trend-heading">채용 트렌드 <span class="card__meta">(우리 플랫폼 기준)</span></h2>
+            <div id="main-trend" aria-labelledby="main-trend-heading"></div>
+          </div>
+
+          <!-- 실시간 채용 시장 동향: 원티드 API의 실제 라이브 공고 데이터 기준(다른 에이전트가 내용을 채울 빈 컨테이너).
+               위 "채용 트렌드"(우리 플랫폼 job_postings 기준)와는 별개의 데이터 출처다. -->
+          <div class="section-group__item">
+            <h2 class="text-h2" id="main-wanted-trend-heading">실시간 채용 시장 동향 (원티드 제공)</h2>
+            <p class="card__meta">원티드에 게시된 실제 공고 데이터를 기반으로 집계됩니다.</p>
+            <div id="main-wanted-trend" aria-labelledby="main-wanted-trend-heading"></div>
+          </div>
+
+          <!-- 스킬 수요 랭킹 (다른 에이전트가 내용을 채울 빈 컨테이너). 2x2 그리드에서 독립 셀로 보이도록
+               기존 "스킬 수요 랭킹 & 조합 분석" 상위 헤딩을 셀별 h2로 분리했다(2차 수정, 2026-07-15). -->
+          <div class="section-group__item">
+            <h2 class="text-h2" id="main-skill-ranking-heading">인기 스킬 랭킹</h2>
+            <div id="main-skill-ranking" aria-labelledby="main-skill-ranking-heading"></div>
+          </div>
+
+          <!-- 스킬 조합 분석 (다른 에이전트가 내용을 채울 빈 컨테이너) -->
+          <div class="section-group__item">
+            <h2 class="text-h2" id="main-skill-combo-heading">자주 함께 요구되는 스킬 조합</h2>
+            <div id="main-skill-combo" aria-labelledby="main-skill-combo-heading"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Group C(개인화): 추천 하이라이트 — 매칭 스코어 카드 가로 스크롤 캐러셀 (DESIGN.md 4.1/7.1절) -->
+      <section class="main-section">
+        <h2 class="text-h2" id="main-highlight-heading">추천 하이라이트</h2>
+        <div id="main-highlight-carousel" class="highlight-carousel" aria-labelledby="main-highlight-heading"></div>
+      </section>
+
+      <!-- Group D(최근 등록): 최근 공고 / 최근 인재 — 2열 그리드, 좌우 폭·비중 대칭 (DESIGN.md 4.1절) -->
+      <section class="main-section">
+        <div id="main-recent-section" class="recent-section">
+          <div class="recent-section__col">
+            <h2 class="text-h2" id="main-recent-jobs-heading">최근 공고</h2>
+            <div id="main-recent-jobs" aria-labelledby="main-recent-jobs-heading"></div>
+          </div>
+          <div class="recent-section__col">
+            <h2 class="text-h2" id="main-recent-talent-heading">최근 인재</h2>
+            <div id="main-recent-talent" aria-labelledby="main-recent-talent-heading"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Group E(읽을거리): 채용 뉴스 — 최하단, 통계와는 다른 톤 (DESIGN.md 4.1절, PRD 6장) -->
+      <section class="main-section">
+        <h2 class="text-h2" id="main-news-heading">채용 뉴스</h2>
+        <div id="main-news" class="news-section" aria-labelledby="main-news-heading"></div>
+      </section>
+
+      </div>
+    </section>
+
+    <!-- 회원가입 (1단계: 역할 선택 → 2단계: 기업/구직자 분기 폼) -->
+    <section id="panel-signup" class="tab-panel" role="tabpanel" hidden>
+
+      <div id="signup-step1" class="signup-step">
+        <h2 class="text-h2">회원 유형을 선택해주세요</h2>
+        <p class="signup-notice">
+          가입 후에는 <strong>기업 ↔ 구직자 역할을 전환할 수 없습니다.</strong> 신중하게 선택해주세요.
+        </p>
+        <div class="role-cards">
+          <button type="button" class="card role-card" data-role="COMPANY">
+            <h3 class="card__title">기업으로 가입</h3>
+            <p class="card__meta">채용 공고를 등록하고 조건에 맞는 인재를 검색합니다.</p>
+          </button>
+          <button type="button" class="card role-card" data-role="JOBSEEKER">
+            <h3 class="card__title">구직자로 가입</h3>
+            <p class="card__meta">공고를 열람하고 관심 있는 기업에 지원합니다.</p>
+          </button>
+        </div>
+      </div>
+
+      <!-- 기업 가입 폼: DB.md 3.3절 company_profiles 컬럼과 이름을 맞춘다 -->
+      <form id="signup-form-company" class="signup-form" hidden novalidate>
+        <h2 class="text-h2">기업 정보 입력</h2>
+
+        <div class="form-row">
+          <label class="form-label" for="company-email">이메일</label>
+          <input class="form-input" type="email" id="company-email" required autocomplete="email" />
+        </div>
+        <div class="form-row">
+          <label class="form-label" for="company-password">비밀번호</label>
+          <input class="form-input" type="password" id="company-password" required minlength="6" autocomplete="new-password" />
+        </div>
+
+        <div class="form-row">
+          <span class="form-label" id="company-industry-label">업종</span>
+          <div class="cascade-group" id="company-industry-select" aria-labelledby="company-industry-label"></div>
+        </div>
+
+        <div class="form-row">
+          <label class="form-label" for="company-size">기업 규모</label>
+          <input class="form-input" type="text" id="company-size" placeholder="예: 50~100명, 스타트업" required />
+        </div>
+
+        <div class="form-row">
+          <span class="form-label" id="company-region-label">위치</span>
+          <div class="cascade-group" id="company-region-select" aria-labelledby="company-region-label"></div>
+        </div>
+
+        <div class="form-row">
+          <span class="form-label" id="company-position-label">채용 직무</span>
+          <div class="cascade-group" id="company-position-select" aria-labelledby="company-position-label"></div>
+        </div>
+
+        <div class="form-row">
+          <label class="form-label" for="company-employment-type">고용형태</label>
+          <select class="form-select" id="company-employment-type" required>
+            <option value="">선택</option>
+            <option value="regular">정규직</option>
+            <option value="contract">계약직</option>
+            <option value="intern">인턴</option>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <span class="form-label" id="company-skills-label">필요 스킬 (다중 선택)</span>
+          <div class="skill-group" id="company-skills" aria-labelledby="company-skills-label"></div>
+        </div>
+
+        <div class="form-row form-row--split">
+          <div>
+            <label class="form-label" for="company-average-salary">평균연봉(만원, 선택)</label>
+            <input class="form-input" type="number" min="0" id="company-average-salary" />
+          </div>
+          <div>
+            <label class="form-label" for="company-hired-salary">신규입사자 평균연봉(만원, 선택)</label>
+            <input class="form-input" type="number" min="0" id="company-hired-salary" />
+          </div>
+        </div>
+
+        <p class="form-status" id="company-signup-status" role="alert" aria-live="polite"></p>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-ghost" data-signup-back>이전</button>
+          <button type="submit" class="btn btn-primary">기업으로 가입 완료</button>
+        </div>
+      </form>
+
+      <!-- 구직자 가입 폼: DB.md 3.5절 jobseeker_profiles 컬럼과 이름을 맞춘다 -->
+      <form id="signup-form-jobseeker" class="signup-form" hidden novalidate>
+        <h2 class="text-h2">구직자 정보 입력</h2>
+
+        <div class="form-row">
+          <label class="form-label" for="jobseeker-email">이메일</label>
+          <input class="form-input" type="email" id="jobseeker-email" required autocomplete="email" />
+        </div>
+        <div class="form-row">
+          <label class="form-label" for="jobseeker-password">비밀번호</label>
+          <input class="form-input" type="password" id="jobseeker-password" required minlength="6" autocomplete="new-password" />
+        </div>
+
+        <div class="form-row">
+          <span class="form-label" id="jobseeker-position-label">희망 직무</span>
+          <div class="cascade-group" id="jobseeker-position-select" aria-labelledby="jobseeker-position-label"></div>
+        </div>
+
+        <div class="form-row">
+          <label class="form-label" for="jobseeker-career-years">경력 연차</label>
+          <input class="form-input" type="number" min="0" id="jobseeker-career-years" required />
+        </div>
+
+        <div class="form-row">
+          <span class="form-label" id="jobseeker-region-label">거주 지역</span>
+          <div class="cascade-group" id="jobseeker-region-select" aria-labelledby="jobseeker-region-label"></div>
+        </div>
+
+        <div class="form-row">
+          <span class="form-label" id="jobseeker-skills-label">보유 스킬 (다중 선택)</span>
+          <div class="skill-group" id="jobseeker-skills" aria-labelledby="jobseeker-skills-label"></div>
+        </div>
+
+        <div class="form-row">
+          <label class="form-label" for="jobseeker-desired-salary">희망 연봉(만원, 선택)</label>
+          <input class="form-input" type="number" min="0" id="jobseeker-desired-salary" />
+        </div>
+
+        <div class="form-row">
+          <label class="form-label" for="jobseeker-employment-type">희망 근무형태</label>
+          <select class="form-select" id="jobseeker-employment-type" required>
+            <option value="">선택</option>
+            <option value="regular">정규직</option>
+            <option value="contract">계약직</option>
+            <option value="intern">인턴</option>
+          </select>
+        </div>
+
+        <div class="form-row form-row--split">
+          <label class="form-toggle">
+            <input type="checkbox" id="jobseeker-salary-public" checked />
+            <span>희망 연봉 공개</span>
+          </label>
+          <label class="form-toggle">
+            <input type="checkbox" id="jobseeker-region-public" checked />
+            <span>거주 지역 공개</span>
+          </label>
+        </div>
+
+        <p class="form-status" id="jobseeker-signup-status" role="alert" aria-live="polite"></p>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-ghost" data-signup-back>이전</button>
+          <button type="submit" class="btn btn-primary">구직자로 가입 완료</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- Tab1(기업) -->
+    <section id="panel-company" class="tab-panel" role="tabpanel" aria-labelledby="tab-btn-company" hidden>
+      <h2 class="text-h2">인재 검색 · 공고 관리 · 지원자 관리</h2>
+      <div id="company-highlight"></div>
+
+      <nav class="subtabs" id="company-subtabs" role="tablist" aria-label="기업 화면 서브 탭">
+        <button type="button" class="subtab" role="tab" id="subtab-btn-jobs" aria-selected="true" aria-controls="company-sub-jobs" data-subtab="jobs">공고 관리</button>
+        <button type="button" class="subtab" role="tab" id="subtab-btn-talents" aria-selected="false" aria-controls="company-sub-talents" data-subtab="talents">인재 검색</button>
+        <button type="button" class="subtab" role="tab" id="subtab-btn-applicants" aria-selected="false" aria-controls="company-sub-applicants" data-subtab="applicants">지원자 관리</button>
+      </nav>
+
+      <section id="company-sub-jobs" class="subtab-panel" role="tabpanel" aria-labelledby="subtab-btn-jobs"></section>
+      <section id="company-sub-talents" class="subtab-panel" role="tabpanel" aria-labelledby="subtab-btn-talents" hidden></section>
+      <section id="company-sub-applicants" class="subtab-panel" role="tabpanel" aria-labelledby="subtab-btn-applicants" hidden></section>
+    </section>
+
+    <!-- Tab2(구직자) -->
+    <section id="panel-jobseeker" class="tab-panel" role="tabpanel" aria-labelledby="tab-btn-jobseeker" hidden>
+      <div id="jobseeker-greeting"></div>
+
+      <div class="jobseeker-container">
+        <div class="kanban-section">
+          <div class="kanban-title">지원 현황 트래커</div>
+          <div class="kanban" id="jobseeker-kanban">
+            <p class="empty-state">지원 현황을 불러오는 중입니다...</p>
+          </div>
+        </div>
+
+        <div class="sidebar">
+          <div class="sidebar-section">
+            <div class="section-title">인사이트</div>
+            <div id="jobseeker-insights">
+              <p class="empty-state">불러오는 중입니다...</p>
+            </div>
+          </div>
+
+          <div class="sidebar-section">
+            <div class="section-title">🔥 이달 핫 스킬</div>
+            <div id="jobseeker-trending-skills">
+              <p class="empty-state">불러오는 중입니다...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="jobseeker-bottom-row">
+        <div class="jobseeker-bottom-row__col">
+          <div class="sidebar-section">
+            <div class="section-title">당신을 위한 공고</div>
+            <div id="jobseeker-recommendations">
+              <p class="empty-state">불러오는 중입니다...</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="jobseeker-bottom-row__col">
+          <div class="sidebar-section">
+            <div class="section-title">📰 뉴스</div>
+            <div id="jobseeker-news">
+              <p class="empty-state">불러오는 중입니다...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="site-footer__inner">
+      <span class="site-footer__brand">채용 플랫폼</span>
+      <span class="site-footer__copyright">© 2026 채용 플랫폼. All rights reserved.</span>
+    </div>
+  </footer>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
