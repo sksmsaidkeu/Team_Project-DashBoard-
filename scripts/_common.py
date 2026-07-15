@@ -1,7 +1,7 @@
 """
 scripts/_common.py
 
-세 스크립트(fetch_wanted_trend.py / seed_categories.py / import_wanted_data.py)가
+네 스크립트(fetch_wanted_trend.py / seed_categories.py / import_wanted_data.py / generate_config.py)가
 공통으로 쓰던 .env 로더와 Supabase REST upsert 헬퍼를 한 곳에 모은 모듈.
 (common 브랜치 REFACT.md P1-6과 동일한 리팩터를 이 브랜치에도 적용) 각 스크립트는
 이 파일을 `from _common import ...`로 가져다 쓴다. 스크립트가 `python scripts/xxx.py`로

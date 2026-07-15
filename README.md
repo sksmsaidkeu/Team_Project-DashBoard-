@@ -85,3 +85,9 @@
 - **백엔드**: Supabase (Postgres, Edge Functions, RLS)
 
 현재 저장소에는 `openapi.json` 등 API 명세 초안이 참고용으로 포함되어 있으며, 아직 구현 코드는 존재하지 않는 초기 단계입니다.
+
+## 로컬 개발 환경 설정
+
+이 프로젝트는 빌드 도구가 없는 정적 SPA라 `.env`를 브라우저가 직접 읽을 수 없습니다. `.env.example`을 복사해 `.env`를 만들고 `SUPABASE_URL`/`SUPABASE_ANON_KEY`(및 선택적으로 `NEWS_API_KEY`)를 채운 뒤 `python scripts/generate_config.py`를 실행하면 `js/config.js`가 자동 생성/갱신됩니다.
+
+> **이 저장소는 public입니다.** `js/config.js`는 실제 키 값이 그대로 들어가는 생성 파일이라 `.gitignore`에 등록되어 있으며, 각자 로컬에서 위 명령으로 직접 생성해야 합니다(커밋되지 않으므로 다른 브랜치/팀원과 공유되지 않습니다).
